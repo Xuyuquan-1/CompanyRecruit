@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hrrecruit.mapper.ApplicationMapper">
+
+    <!-- 分页查询应聘列表，支持关键词和状态筛选 -->
+    <select id="selectPageWithFilter" resultType="com.hrrecruit.entity.Application">
+        SELECT a.*,
+               r.original_filename AS resumeName,
+               j.title AS jobTitle,
+               j.department AS jobDepartment,
+               u.real_name AS candidateName,
+               u.phone AS phone
+        FROM application a
+        LEFT JOIN resume r ON a.resume_id = r.id
+        LEFT JOIN job_post j ON a.job_id = j.id
+        LEFT JOIN sys_user u ON a.candidate_id = u.id
+        <where>
+            a.deleted = 0
+            <if test="keyword != null and keyword != ''">
+                AND (r.original_filename LIKE CONCAT('%', #{keyword}, '%')
+                     OR j.title LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+            <if test="jobId != null">
+                AND a.job_id = #{jobId}
+            </if>
+            <if test="tag != null and tag != ''">
+                AND a.tags LIKE CONCAT('%', #{tag}, '%')
+            </if>
+            <if test="candidateId != null">
+                AND a.candidate_id = #{candidateId}
+            </if>
+        </where>
+        ORDER BY a.apply_time DESC
+    </select>
+
+    <!-- 按岗位统计应聘数量 -->
+    <select id="countByJobId" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM application WHERE job_id = #{jobId} AND deleted = 0
+    </select>
+
+</mapper>

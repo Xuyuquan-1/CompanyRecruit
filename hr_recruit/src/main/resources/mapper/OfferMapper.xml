@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hrrecruit.mapper.OfferMapper">
+
+    <!-- 分页查询录用列表，关联应聘者、岗位信息 -->
+    <select id="selectPageWithDetail" resultType="com.hrrecruit.entity.Offer">
+        SELECT o.id,
+               o.application_id,
+               o.offer_time,
+               o.expected_join_date,
+               o.status,
+               o.docs_submitted,
+               o.create_time,
+               o.update_time,
+               u.real_name AS candidateName,
+               j.title AS jobTitle
+        FROM offer o
+        LEFT JOIN application a ON o.application_id = a.id AND a.deleted = 0
+        LEFT JOIN job_post j ON a.job_id = j.id AND j.deleted = 0
+        LEFT JOIN sys_user u ON a.candidate_id = u.id AND u.deleted = 0
+        <where>
+            <if test="query.status != null">
+                AND o.status = #{query.status}
+            </if>
+            <if test="query.candidateName != null and query.candidateName != ''">
+                AND u.real_name LIKE CONCAT('%', #{query.candidateName}, '%')
+            </if>
+            <if test="query.candidateId != null">
+                AND a.candidate_id = #{query.candidateId}
+            </if>
+        </where>
+        ORDER BY o.create_time DESC
+    </select>
+
+</mapper>

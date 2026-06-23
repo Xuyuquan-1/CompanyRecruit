@@ -1,0 +1,94 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: hr-recruit
+
+  profiles:
+    active: dev
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/recruitment_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 5000ms
+
+  # 文件上传大小限制
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # 邮件配置（按需填写）
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: your_email@163.com
+    password: your_password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+  # Spring AI 配置（使用 DeepSeek）
+  ai:
+    openai:
+      api-key:
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.7
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开发阶段打印SQL日志
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto              # 主键自增策略
+      logic-delete-field: deleted # 逻辑删除字段名
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.hrrecruit.entity
+
+# JWT 配置
+jwt:
+  secret: hr-recruit-system-jwt-secret-key-2026-must-be-at-least-256-bits-long-for-hs256
+  expiration: 604800000  # token有效期：7天（毫秒）
+
+# 阿里云 OSS 配置
+aliyun:
+  oss:
+    endpoint:
+    access-key-id:
+    access-key-secret:
+    bucket-name:
+    base-url: https://companyrecruit.oss-cn-beijing.aliyuncs.com
+
+# 文件存储配置
+file:
+  upload-path: ./uploads/   # 本地上传根目录
+  max-size: 52428800        # 最大50MB
+
+# 日志级别
+logging:
+  level:
+    root: INFO
+    com.hrrecruit: DEBUG
+    org.springframework.security: DEBUG

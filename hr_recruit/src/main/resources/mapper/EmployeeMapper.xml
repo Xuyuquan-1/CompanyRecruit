@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hrrecruit.mapper.EmployeeMapper">
+
+    <!-- 查询全部员工列表，关联录用、应聘、岗位、用户信息补全空字段 -->
+    <select id="selectListWithDetail" resultType="com.hrrecruit.entity.Employee">
+        SELECT e.id,
+               e.offer_id,
+               IFNULL(e.name, u.real_name) AS name,
+               IFNULL(e.phone, u.phone) AS phone,
+               IFNULL(e.email, u.email) AS email,
+               IFNULL(e.department, j.department) AS department,
+               IFNULL(e.position, j.title) AS position,
+               IFNULL(e.expected_join_date, o.expected_join_date) AS expectedJoinDate,
+               e.actual_join_date AS actualJoinDate,
+               e.join_date AS joinDate,
+               e.id_card_status,
+               e.contract_status,
+               e.medical_report_status,
+               e.profile_data,
+               e.status,
+               e.create_time,
+               e.update_time
+        FROM employee e
+        LEFT JOIN offer o ON e.offer_id = o.id
+        LEFT JOIN application a ON o.application_id = a.id AND a.deleted = 0
+        LEFT JOIN job_post j ON a.job_id = j.id AND j.deleted = 0
+        LEFT JOIN sys_user u ON a.candidate_id = u.id AND u.deleted = 0
+        ORDER BY e.create_time DESC
+    </select>
+
+</mapper>

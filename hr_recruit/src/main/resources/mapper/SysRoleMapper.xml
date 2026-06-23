@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hrrecruit.mapper.SysRoleMapper">
+
+    <!-- 查询角色列表及其菜单权限数量 -->
+    <select id="selectRoleWithMenuCount" resultType="java.util.HashMap">
+        SELECT r.id, r.role_name AS roleName, r.role_code AS roleKey,
+               r.description AS remark, r.create_time AS createTime,
+               COUNT(rm.role_id) AS menuCount
+        FROM sys_role r
+        LEFT JOIN sys_role_menu rm ON r.id = rm.role_id
+        WHERE r.status = 1
+        GROUP BY r.id
+        ORDER BY r.create_time DESC
+    </select>
+
+</mapper>
