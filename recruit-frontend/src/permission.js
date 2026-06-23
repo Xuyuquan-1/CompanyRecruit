@@ -34,8 +34,10 @@ router.beforeEach(async (to, from, next) => {
         }
       } else {
         // 检查当前路由及父路由是否需要权限
-        const needsPermission = to.matched.some(route => route.meta?.permission && !userStore.hasPermission(route.meta.permission))
-        if (needsPermission) {
+        // 只有当路由配置了 permission 时才进行权限检查
+        const matchedRoute = to.matched.find(route => route.meta?.permission)
+        if (matchedRoute && !userStore.hasPermission(matchedRoute.meta.permission)) {
+          ElMessage.warning('您没有权限访问此页面')
           next('/dashboard') // 没有权限，跳转到首页
         } else {
           // 检查角色限制

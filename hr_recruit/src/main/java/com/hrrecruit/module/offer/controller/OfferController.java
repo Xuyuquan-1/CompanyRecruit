@@ -96,10 +96,11 @@ public class OfferController {
     @PostMapping("/{id}/submit-documents")
     @PreAuthorize("hasAnyAuthority('offer:list', 'ROLE_CANDIDATE')")
     public Result<Void> submitDocuments(@PathVariable Long id, @RequestBody Map<String, String> params) {
-        String idCardUrl = params.get("idCardUrl");
+        String idCardFrontUrl = params.get("idCardFrontUrl");
+        String idCardBackUrl = params.get("idCardBackUrl");
         String medicalReportUrl = params.get("medicalReportUrl");
         String contractUrl = params.get("contractUrl");
-        offerService.submitDocuments(id, idCardUrl, medicalReportUrl, contractUrl);
+        offerService.submitDocuments(id, idCardFrontUrl, idCardBackUrl, medicalReportUrl, contractUrl);
         return Result.successMsg("资料提交成功，等待招聘者审核");
     }
 }

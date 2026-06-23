@@ -64,9 +64,23 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    public void reject(Long id) {
+    public void reject(Long id, Integer refuseType) {
         Application application = getById(id);
+        
+        // 状态流转约束：只有非终态才能设置为不录用
+        if (application.getStatus() == Constants.APP_STATUS_REJECTED 
+            || application.getStatus() == Constants.APP_STATUS_ONBOARDED) {
+            throw new BusinessException("该应聘记录已为终态，无法重复操作");
+        }
+        
+        // 强制约束：不录用必须指定失败原因
+        if (refuseType == null) {
+            throw new BusinessException("不录用操作必须指定失败原因");
+        }
+        
         application.setStatus(Constants.APP_STATUS_REJECTED);
+        application.setResult(2); // 应聘失败
+        application.setRefuseType(refuseType);
         applicationMapper.updateById(application);
     }
 

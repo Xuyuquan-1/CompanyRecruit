@@ -49,7 +49,6 @@
 
       <!-- 数据表格 -->
       <el-table :data="tableData" border stripe v-loading="loading" style="margin-top: 10px; width:100%">
-        <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="岗位名称" min-width="150" />
         <el-table-column prop="department" label="部门" width="120" />
         <el-table-column prop="headcount" label="招聘人数" width="100" align="center" />

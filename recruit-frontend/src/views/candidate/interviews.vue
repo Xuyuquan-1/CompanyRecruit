@@ -7,23 +7,30 @@
 
     <el-card shadow="never" style="margin-top:15px">
       <el-table :data="tableData" border stripe v-loading="loading" style="width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="jobTitle" label="应聘岗位" min-width="150" show-overflow-tooltip />
         <el-table-column prop="interviewTime" label="面试时间" width="160">
           <template #default="{ row }">{{ formatDateTime(row.interviewTime) }}</template>
         </el-table-column>
         <el-table-column prop="location" label="面试地点" min-width="150" show-overflow-tooltip />
         <el-table-column prop="interviewerName" label="面试官" width="100" />
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="面试状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)">
               {{ statusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="result" label="面试结果" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.result === 1" type="success">通过</el-tag>
+            <el-tag v-else-if="row.result === 2" type="danger">未通过</el-tag>
+            <span v-else style="color:#999">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="success" link icon="View" @click="viewEvaluation(row)">查看评价</el-button>
+            <!-- 只要有评价就可以查看 -->
+            <el-button v-if="row.evaluation || row.result" type="success" link icon="View" @click="viewEvaluation(row)">查看评价</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -18,7 +18,6 @@
 
     <el-card shadow="never" style="margin-top:15px" class="table-card">
       <el-table :data="tableData" border stripe v-loading="loading" style="width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="candidateName" label="应聘者" min-width="100" show-overflow-tooltip />
         <el-table-column prop="jobTitle" label="岗位" min-width="120" show-overflow-tooltip />
         <el-table-column prop="interviewTime" label="面试时间" width="160">
@@ -38,15 +37,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
+        <el-table-column label="操作" width="300" fixed="right" align="center">
           <template #default="{ row }">
             <!-- 招聘者/管理员可以评价和取消 -->
             <template v-if="!userStore.isCandidate()">
               <el-button v-if="row.status===0" type="primary" link icon="Edit" @click="openEvaluate(row)">评价</el-button>
               <el-button v-if="row.status===0" type="danger" link icon="Close" @click="handleCancel(row)">取消</el-button>
+              <!-- 面试通过后可直接发放Offer -->
+              <el-button v-if="row.status===1 && row.result===1 && !row.offerId" type="warning" link icon="Send" @click="openSendOffer(row)">发放Offer</el-button>
             </template>
             <!-- 所有人都可以查看评价 -->
-            <el-button type="success" link icon="View" @click="viewEvaluation(row)">查看评价</el-button>
+            <el-button v-if="row.status!==0" type="success" link icon="View" @click="viewEvaluation(row)">查看评价</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -73,7 +74,7 @@
       </el-form>
       <template #footer>
         <el-button @click="evalVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitEval">提交</el-button>
+        <el-button type="primary" @click="submitEval" :disabled="!evalForm.result">提交</el-button>
       </template>
     </el-dialog>
 
@@ -95,6 +96,32 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <!-- 发放Offer对话框 -->
+    <el-dialog v-model="sendOfferVisible" title="发放录用通知" width="600px">
+      <el-form :model="sendOfferForm" label-width="110px">
+        <el-form-item label="应聘者">{{ sendOfferForm.candidateName }}</el-form-item>
+        <el-form-item label="应聘岗位">{{ sendOfferForm.jobTitle }}</el-form-item>
+        <el-form-item label="预计入职日期" required>
+          <el-date-picker v-model="sendOfferForm.expectedJoinDate" type="date" placeholder="选择日期" 
+            value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="薪资待遇">
+          <el-input v-model="sendOfferForm.salary" placeholder="例如：15K-20K·13薪" />
+        </el-form-item>
+        <el-form-item label="福利说明">
+          <el-input v-model="sendOfferForm.benefits" type="textarea" :rows="3" 
+            placeholder="例如：五险一金、带薪年假、节日福利" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="sendOfferForm.remark" type="textarea" :rows="2" placeholder="其他说明信息" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="sendOfferVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitSendOffer">发送Offer</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -102,6 +129,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getInterviewPage, cancelInterview, evaluateInterview } from '../../api/interview'
+import { sendOffer } from '../../api/offer'
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
@@ -119,17 +147,75 @@ async function handleCancel(row) {
   try { await cancelInterview(row.id); ElMessage.success('已取消'); loadData() } catch {}
 }
 
-const evalVisible = ref(false), evalForm = reactive({ result: 1, evaluation: '' }), evalId = ref(null)
-function openEvaluate(row) { evalId.value = row.id; evalForm.result = 1; evalForm.evaluation = ''; evalVisible.value = true }
+const evalVisible = ref(false), evalForm = reactive({ result: null, evaluation: '' }), evalId = ref(null)
+function openEvaluate(row) { 
+  evalId.value = row.id
+  evalForm.result = null  // 不设置默认值，强制用户选择
+  evalForm.evaluation = ''
+  evalVisible.value = true 
+}
 async function submitEval() {
+  // 验证是否选择了结果
+  if (!evalForm.result) {
+    ElMessage.warning('请选择面试结果（通过/不通过）')
+    return
+  }
   try {
     await evaluateInterview(evalId.value, evalForm.evaluation, evalForm.result)
-    ElMessage.success('评价提交成功'); evalVisible.value = false; loadData()
-  } catch {}
+    ElMessage.success('评价提交成功')
+    evalVisible.value = false
+    loadData()
+  } catch (e) {
+    console.error('评价失败:', e)
+  }
 }
 
 const viewEvalVisible = ref(false), evalView = ref({})
 function viewEvaluation(row) { evalView.value = row; viewEvalVisible.value = true }
+
+// 发放Offer相关
+const sendOfferVisible = ref(false)
+const sendOfferForm = reactive({
+  applicationId: null,
+  candidateName: '',
+  jobTitle: '',
+  expectedJoinDate: '',
+  salary: '',
+  benefits: '',
+  remark: ''
+})
+
+function openSendOffer(row) {
+  sendOfferForm.applicationId = row.applicationId
+  sendOfferForm.candidateName = row.candidateName || ''
+  sendOfferForm.jobTitle = row.jobTitle || ''
+  sendOfferForm.expectedJoinDate = ''
+  sendOfferForm.salary = ''
+  sendOfferForm.benefits = ''
+  sendOfferForm.remark = ''
+  sendOfferVisible.value = true
+}
+
+async function submitSendOffer() {
+  if (!sendOfferForm.expectedJoinDate) {
+    ElMessage.warning('请选择预计入职日期')
+    return
+  }
+  try {
+    await sendOffer({
+      applicationId: sendOfferForm.applicationId,
+      expectedJoinDate: sendOfferForm.expectedJoinDate,
+      salary: sendOfferForm.salary,
+      benefits: sendOfferForm.benefits,
+      remark: sendOfferForm.remark
+    })
+    ElMessage.success('录用通知已发送，应聘者将收到通知')
+    sendOfferVisible.value = false
+    loadData()
+  } catch (e) {
+    console.error('发送失败:', e)
+  }
+}
 
 function formatDate(d) { return d ? d.replace('T', ' ').substring(0, 16) : '' }
 function statusTagType(s) { const map = {0:'warning',1:'success',2:'info'}; return map[s]||'info' }

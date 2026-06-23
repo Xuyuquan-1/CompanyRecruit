@@ -19,7 +19,7 @@
           <!-- 只有一个子菜单时，直接显示子菜单 -->
           <el-menu-item
             v-if="route.children && route.children.length === 1"
-            :index="route.path + '/' + route.children[0].path"
+            :index="(route.path === '/' ? '' : route.path) + '/' + route.children[0].path"
           >
             <el-icon><component :is="route.children[0].meta?.icon || route.meta?.icon" /></el-icon>
             <span>{{ route.children[0].meta?.title || route.meta?.title }}</span>
@@ -37,7 +37,7 @@
             <el-menu-item
               v-for="child in route.children"
               :key="child.path"
-              :index="route.path + '/' + child.path"
+              :index="(route.path === '/' ? '' : route.path) + '/' + child.path"
             >
               <el-icon><component :is="child.meta?.icon" /></el-icon>
               <span>{{ child.meta?.title }}</span>

@@ -8,9 +8,13 @@
         <el-form-item label="状态">
           <el-select v-model="queryForm.status" placeholder="全部" clearable style="width:140px">
             <el-option label="待筛选" :value="0" />
-            <el-option label="通过" :value="1" />
-            <el-option label="不通过" :value="2" />
-            <el-option label="已录用" :value="3" />
+            <el-option label="通过筛选" :value="1" />
+            <el-option label="面试中" :value="2" />
+            <el-option label="待确认Offer" :value="3" />
+            <el-option label="不录用" :value="4" />
+            <el-option label="已接受Offer(待入职)" :value="5" />
+            <el-option label="已入职" :value="6" />
+            <el-option label="候选人撤回" :value="7" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -22,12 +26,11 @@
 
     <el-card shadow="never" style="margin-top:15px" class="table-card">
       <el-table :data="tableData" border stripe v-loading="loading" style="width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="candidateName" label="应聘者姓名" min-width="100" show-overflow-tooltip />
         <el-table-column prop="resumeName" label="应聘简历" min-width="120" show-overflow-tooltip />
         <el-table-column prop="jobTitle" label="应聘岗位" min-width="130" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <el-table-column prop="status" label="状态" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
@@ -35,12 +38,15 @@
         <el-table-column prop="applyTime" label="投递时间" width="160">
           <template #default="{ row }">{{ formatDate(row.applyTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
+        <el-table-column label="操作" width="200" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handleView(row)">查看</el-button>
-            <el-button v-if="row.status===0" type="success" link icon="Select" @click="handlePass(row)">通过</el-button>
-            <el-button v-if="row.status===0" type="danger" link icon="CloseBold" @click="handleReject(row)">不通过</el-button>
-            <el-button v-if="row.status===1" type="primary" link icon="ChatDotSquare" @click="openArrange(row)">安排面试</el-button>
+            <!-- 只有招聘者/管理员才能看到审核按钮 -->
+            <template v-if="!userStore.isCandidate()">
+              <el-button v-if="row.status===0" type="success" link icon="Select" @click="handlePass(row)">通过</el-button>
+              <el-button v-if="row.status===0" type="danger" link icon="CloseBold" @click="handleReject(row)">不通过</el-button>
+              <el-button v-if="row.status===1" type="primary" link icon="ChatDotSquare" @click="openArrange(row)">安排面试</el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -121,8 +127,21 @@ async function handlePass(row) {
   try { await passApplication(row.id); ElMessage.success('已通过'); loadData() } catch {}
 }
 async function handleReject(row) {
-  await ElMessageBox.confirm('确认不通过？', '提示', { type: 'warning' })
-  try { await rejectApplication(row.id); ElMessage.success('已拒绝'); loadData() } catch {}
+  // 选择失败原因
+  try {
+    const { value: refuseType } = await ElMessageBox.prompt(
+      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-材料不合格 5-录用审批驳回 6-候选人主动撤回 7-岗位关闭终止',
+      '不录用原因',
+      {
+        inputPlaceholder: '输入原因编号（1-7）',
+        inputPattern: /^[1-7]$/,
+        inputErrorMessage: '请输入1-7之间的数字'
+      }
+    )
+    await rejectApplication(row.id, parseInt(refuseType))
+    ElMessage.success('已拒绝')
+    loadData()
+  } catch {}
 }
 
 const detailVisible = ref(false), currentApp = ref({})
@@ -145,6 +164,7 @@ function openArrange(row) {
 }
 async function submitArrange() {
   if (!arrangeForm.interviewTime) { ElMessage.warning('请选择面试时间'); return }
+  if (new Date(arrangeForm.interviewTime).getTime() <= Date.now()) { ElMessage.warning('面试时间必须晚于当前时间'); return }
   try {
     await arrangeInterview({
       applicationId: arrangeTarget.value.id,
@@ -158,9 +178,40 @@ async function submitArrange() {
   } catch {}
 }
 
+async function submitOffer() {
+  if (!offerForm.expectedJoinDate) { ElMessage.warning('请选择预计入职日期'); return }
+  try {
+    await sendOffer({
+      applicationId: offerTarget.value.id,
+      expectedJoinDate: offerForm.expectedJoinDate,
+      salary: offerForm.salary,
+      benefits: offerForm.benefits,
+      remark: offerForm.remark
+    })
+    ElMessage.success('Offer发放成功')
+    offerVisible.value = false
+    loadData()
+  } catch {}
+}
+
 function formatDate(d) { return d ? d.replace('T', ' ').substring(0, 16) : '' }
-function statusType(s) { const map = {0:'info',1:'success',2:'danger',3:''}; return map[s]||'info' }
-function statusLabel(s) { const map = {0:'待筛选',1:'通过',2:'不通过',3:'已录用'}; return map[s]||'未知' }
+function statusType(s) { 
+  const map = {0:'info',1:'warning',2:'',3:'primary',4:'danger',5:'success',6:'success',7:'info'}
+  return map[s]||'info' 
+}
+function statusLabel(s) { 
+  const map = {
+    0:'待筛选',
+    1:'通过筛选',
+    2:'面试中',
+    3:'待确认Offer',
+    4:'不录用',
+    5:'已接受Offer(待入职)',
+    6:'已入职',
+    7:'候选人撤回'
+  }
+  return map[s]||'未知' 
+}
 
 onMounted(loadData)
 </script>

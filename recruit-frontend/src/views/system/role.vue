@@ -17,7 +17,6 @@
         <el-button type="primary" icon="Plus" @click="handleAdd">新增角色</el-button>
       </div>
       <el-table :data="pagedData" border stripe v-loading="loading" style="margin-top:10px;width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="roleName" label="角色名" width="120" />
         <el-table-column prop="roleCode" label="角色标识" min-width="140" show-overflow-tooltip />
         <el-table-column prop="description" label="备注" min-width="180" show-overflow-tooltip />

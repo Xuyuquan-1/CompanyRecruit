@@ -56,7 +56,7 @@ const protectedRoutes = [
     path: '/application',
     component: Layout,
     redirect: '/application/list',
-    meta: { title: '应聘筛选', icon: 'Filter' },
+    meta: { title: '应聘筛选', icon: 'Filter', roles: ['ROLE_HR', 'ROLE_ADMIN'] },
     children: [
       {
         path: 'list',

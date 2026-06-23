@@ -29,4 +29,26 @@ public interface NotificationService {
      * 获取未读数量
      */
     long getUnreadCount();
+
+    /**
+     * 发送面试通知
+     * @param candidateId 应聘者ID
+     * @param jobTitle 岗位名称
+     * @param interviewTime 面试时间
+     * @param location 面试地点
+     * @param interviewerName 面试官姓名
+     */
+    void sendInterviewNotification(Long candidateId, String jobTitle, java.time.LocalDateTime interviewTime, 
+                                    String location, String interviewerName);
+
+    /**
+     * 发送录用通知（含资料提交说明）
+     * @param candidateId 应聘者ID
+     * @param jobTitle 岗位名称
+     * @param salary 薪资待遇
+     * @param benefits 福利说明
+     * @param expectedJoinDate 预计入职日期
+     */
+    void sendOfferNotification(Long candidateId, String jobTitle, String salary, 
+                               String benefits, java.time.LocalDate expectedJoinDate);
 }

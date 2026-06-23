@@ -9,11 +9,15 @@
                j.title AS jobTitle,
                j.department AS jobDepartment,
                u.real_name AS candidateName,
-               u.phone AS phone
+               u.phone AS phone,
+               o.id AS offerId,
+               o.status AS offerStatus,
+               o.docs_submitted AS offerDocsSubmitted
         FROM application a
         LEFT JOIN resume r ON a.resume_id = r.id
         LEFT JOIN job_post j ON a.job_id = j.id
         LEFT JOIN sys_user u ON a.candidate_id = u.id
+        LEFT JOIN offer o ON a.id = o.application_id
         <where>
             a.deleted = 0
             <if test="keyword != null and keyword != ''">

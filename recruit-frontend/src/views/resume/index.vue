@@ -43,13 +43,12 @@
     <el-card shadow="never" style="margin-top:15px">
       <div class="table-header">
         <!-- 只有有上传权限的用户才能看到上传按钮 -->
-        <el-upload v-if="userStore.hasPermission('resume:upload') || userStore.isCandidate()" :show-file-list="false" :before-upload="handleUpload" accept=".pdf,.doc,.docx" :http-request="()=>{}">
+        <el-upload v-if="userStore.isCandidate()" :show-file-list="false" :before-upload="handleUpload" accept=".pdf,.doc,.docx" :http-request="()=>{}">
           <el-button type="primary" icon="Upload">上传简历</el-button>
         </el-upload>
       </div>
 
       <el-table :data="tableData" border stripe v-loading="loading" style="margin-top:10px">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="originalFilename" label="文件名" min-width="180" />
         <el-table-column v-if="canManage()" prop="jobTitle" label="关联岗位" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">
@@ -67,15 +66,13 @@
         <el-table-column prop="uploadTime" label="上传时间" width="170">
           <template #default="{ row }">{{ formatDate(row.uploadTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="420" fixed="right" align="center">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
             <template v-if="canManage()">
               <el-button type="primary" link icon="View" @click="handleView(row)">查看</el-button>
               <el-button type="info" link icon="Download" @click="handleDownload(row)">下载</el-button>
               <el-button type="success" link icon="MagicStick" @click="handleParse(row)">AI解析</el-button>
               <el-button type="warning" link icon="Edit" @click="handleEdit(row)">修正</el-button>
-              <el-button type="success" link icon="Select" @click="handlePass(row)">通过</el-button>
-              <el-button type="danger" link icon="CloseBold" @click="handleReject(row)">不通过</el-button>
               <el-button type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
             </template>
             <!-- 应聘者：仅下载 -->
@@ -107,8 +104,33 @@
         <el-descriptions-item label="工作年限">{{ parsedData.experience }}</el-descriptions-item>
         <el-descriptions-item label="期望薪资">{{ parsedData.expectedSalary }}</el-descriptions-item>
         <el-descriptions-item label="技能" :span="2">{{ parsedData.skills }}</el-descriptions-item>
+        <el-descriptions-item label="关联岗位" :span="2">{{ currentResume.jobTitle || '未投递' }}</el-descriptions-item>
+        <el-descriptions-item label="应聘状态" :span="2" v-if="currentResume.applicationId">
+          <el-tag :type="applicationStatusType(currentResume.applicationStatus)">
+            {{ applicationStatusLabel(currentResume.applicationStatus) }}
+          </el-tag>
+        </el-descriptions-item>
       </el-descriptions>
       <el-empty v-else description="尚未解析或数据为空" />
+      
+      <!-- 如果已投递到岗位且状态为待筛选，显示筛选操作按钮 -->
+      <div v-if="currentResume.applicationId && currentResume.applicationStatus === 0" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee">
+        <h4 style="margin: 0 0 15px 0">筛选操作</h4>
+        <el-button type="success" icon="Select" @click="handlePass(currentResume)">通过筛选</el-button>
+        <el-button type="danger" icon="CloseBold" @click="handleReject(currentResume)">不通过</el-button>
+      </div>
+      
+      <!-- 如果已投递但不在待筛选状态，显示状态提示 -->
+      <div v-else-if="currentResume.applicationId && currentResume.applicationStatus !== 0" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee">
+        <el-alert type="info" :closable="false" show-icon>
+          <template #title>
+            该简历当前状态为：<el-tag :type="applicationStatusType(currentResume.applicationStatus)" size="small">
+              {{ applicationStatusLabel(currentResume.applicationStatus) }}
+            </el-tag>
+            ，无需重复筛选
+          </template>
+        </el-alert>
+      </div>
     </el-dialog>
 
     <!-- 修正对话框 -->
@@ -200,27 +222,35 @@ async function handleDownload(row) {
 }
 
 // 查看
-const viewVisible = ref(false), parsedData = ref(null)
+const viewVisible = ref(false), parsedData = ref(null), currentResume = ref({})
 function handleView(row) {
+  console.log('查看简历:', row)  // 调试日志
+  currentResume.value = row  // 保存当前简历信息
+  
   if (!row.parsedJson) {
     parsedData.value = null
   } else {
-    const raw = JSON.parse(row.parsedJson)
-    // 从 education 数组中提取第一条学历信息
-    const edu = Array.isArray(raw.education) && raw.education.length > 0 ? raw.education[0] : (raw.education || {})
-    const school = raw.school || edu.school || ''
-    const major = raw.major || edu.major || ''
-    const degree = raw.degree || edu.degree || (typeof raw.education === 'string' ? raw.education : '')
-    const graduationYear = raw.graduationYear || edu.endDate || ''
-    // skills 数组转字符串
-    const skills = Array.isArray(raw.skills) ? raw.skills.join('、') : (raw.skills || '')
-    parsedData.value = {
-      ...raw,
-      education: degree,
-      school,
-      major,
-      graduationYear,
-      skills
+    try {
+      const raw = JSON.parse(row.parsedJson)
+      // 从 education 数组中提取第一条学历信息
+      const edu = Array.isArray(raw.education) && raw.education.length > 0 ? raw.education[0] : (raw.education || {})
+      const school = raw.school || edu.school || ''
+      const major = raw.major || edu.major || ''
+      const degree = raw.degree || edu.degree || (typeof raw.education === 'string' ? raw.education : '')
+      const graduationYear = raw.graduationYear || edu.endDate || ''
+      // skills 数组转字符串
+      const skills = Array.isArray(raw.skills) ? raw.skills.join('、') : (raw.skills || '')
+      parsedData.value = {
+        ...raw,
+        education: degree,
+        school,
+        major,
+        graduationYear,
+        skills
+      }
+    } catch (e) {
+      console.error('解析简历数据失败:', e)
+      parsedData.value = null
     }
   }
   viewVisible.value = true
@@ -281,6 +311,7 @@ async function handlePass(row) {
     await ElMessageBox.confirm('确认通过该简历筛选？', '提示', { type: 'warning' })
     await passApplication(row.applicationId)
     ElMessage.success('已通过筛选')
+    viewVisible.value = false  // 关闭详情弹窗
     loadData()
   } catch {}
 }
@@ -288,9 +319,18 @@ async function handlePass(row) {
 async function handleReject(row) {
   if (!row.applicationId) { ElMessage.warning('该简历尚未投递到岗位，无法操作'); return }
   try {
-    await ElMessageBox.confirm('确认不录用该简历？', '提示', { type: 'warning' })
-    await rejectApplication(row.applicationId)
+    const { value: refuseType } = await ElMessageBox.prompt(
+      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-材料不合格 5-录用审批驳回 6-候选人主动撤回 7-岗位关闭终止',
+      '不录用原因',
+      {
+        inputPlaceholder: '输入原因编号（1-7）',
+        inputPattern: /^[1-7]$/,
+        inputErrorMessage: '请输入1-7之间的数字'
+      }
+    )
+    await rejectApplication(row.applicationId, parseInt(refuseType))
     ElMessage.success('已标记为不录用')
+    viewVisible.value = false  // 关闭详情弹窗
     loadData()
   } catch {}
 }
@@ -304,6 +344,27 @@ function formatDate(d) { return d ? d.replace('T', ' ').substring(0, 19) : '' }
 function formatSize(s) { return s ? (s > 1048576 ? (s/1048576).toFixed(1)+'MB' : (s/1024).toFixed(0)+'KB') : '-' }
 function parseStatusType(s) { return s === 1 ? 'success' : s === 2 ? 'danger' : 'info' }
 function parseStatusLabel(s) { return s === 1 ? '已解析' : s === 2 ? '失败' : '待解析' }
+
+// 应聘状态类型
+function applicationStatusType(s) {
+  const map = { 0: 'info', 1: 'warning', 2: '', 3: 'warning', 4: 'danger', 5: 'success', 6: 'success', 7: 'info' }
+  return map[s] || 'info'
+}
+
+// 应聘状态标签
+function applicationStatusLabel(s) {
+  const map = {
+    0: '待筛选',
+    1: '通过筛选',
+    2: '面试中',
+    3: '待确认Offer',
+    4: '不录用',
+    5: '已接受Offer(待入职)',
+    6: '已入职',
+    7: '候选人撤回'
+  }
+  return map[s] || '未知'
+}
 
 async function loadJobList() {
   try { const res = await getPublishedJobs(); jobList.value = res.data || [] } catch {}

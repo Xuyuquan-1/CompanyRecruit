@@ -7,7 +7,6 @@
 
     <el-card shadow="never" style="margin-top:15px">
       <el-table :data="tableData" border stripe v-loading="loading" style="width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="jobTitle" label="岗位" min-width="150" show-overflow-tooltip />
         <el-table-column prop="offerTime" label="发送时间" width="160">
           <template #default="{ row }">{{ formatDateTime(row.offerTime) }}</template>
@@ -34,7 +33,7 @@
             </template>
             <!-- 已接受状态 -->
             <el-button 
-              v-if="row.status === 1" 
+              v-if="row.status === 1 && !row.docsSubmitted" 
               type="primary" 
               link 
               icon="Upload" 
@@ -92,12 +91,12 @@
         style="margin-bottom:15px"
       />
       <el-form :model="submitDocsForm" label-width="110px">
-        <el-form-item label="身份证">
+        <el-form-item label="身份证正面">
           <el-upload
             class="upload-demo"
             action="#"
             :auto-upload="false"
-            :on-change="(file) => handleFileChange(file, 'idCard')"
+            :on-change="(file) => handleFileChange(file, 'idCardFront')"
             :before-upload="beforeUpload"
             accept="image/*,.pdf"
             :limit="1"
@@ -107,7 +106,26 @@
               <div class="el-upload__tip">支持jpg/png/pdf格式，不超过10MB</div>
             </template>
           </el-upload>
-          <div v-if="submitDocsForm.idCardUrl" style="color:#67c23a;margin-top:5px">
+          <div v-if="submitDocsForm.idCardFrontUrl" style="color:#67c23a;margin-top:5px">
+            ✓ 已上传
+          </div>
+        </el-form-item>
+        <el-form-item label="身份证反面">
+          <el-upload
+            class="upload-demo"
+            action="#"
+            :auto-upload="false"
+            :on-change="(file) => handleFileChange(file, 'idCardBack')"
+            :before-upload="beforeUpload"
+            accept="image/*,.pdf"
+            :limit="1"
+          >
+            <el-button type="primary" size="small">选择文件</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持jpg/png/pdf格式，不超过10MB</div>
+            </template>
+          </el-upload>
+          <div v-if="submitDocsForm.idCardBackUrl" style="color:#67c23a;margin-top:5px">
             ✓ 已上传
           </div>
         </el-form-item>
@@ -185,7 +203,8 @@ const submitDocsVisible = ref(false)
 const uploading = ref(false)
 const submitDocsForm = reactive({
   offerId: null,
-  idCardUrl: '',
+  idCardFrontUrl: '',
+  idCardBackUrl: '',
   medicalReportUrl: '',
   contractUrl: ''
 })
@@ -242,7 +261,8 @@ async function handleRejectOffer(row) {
 // 打开提交资料对话框
 function openSubmitDocs(row) {
   submitDocsForm.offerId = row.id
-  submitDocsForm.idCardUrl = ''
+  submitDocsForm.idCardFrontUrl = ''
+  submitDocsForm.idCardBackUrl = ''
   submitDocsForm.medicalReportUrl = ''
   submitDocsForm.contractUrl = ''
   submitDocsVisible.value = true
@@ -262,14 +282,41 @@ function beforeUpload(file) {
 async function handleFileChange(file, type) {
   try {
     const res = await uploadFile(file.raw)
+    console.log('上传返回结果:', res)
+    console.log('res.data:', res.data)
+    console.log('res.data类型:', typeof res.data)
+    
     if (res.code === 200) {
+      // 确保 res.data 是字符串
+      let url = res.data
+      console.log('处理前的url:', url, '类型:', typeof url)
+      
+      if (typeof url === 'object') {
+        // 如果是对象，尝试获取 url 字段
+        console.log('res.data 是对象，尝试提取URL字段')
+        url = url.url || url.downloadUrl || url.fileUrl || ''
+        console.log('提取后的url:', url)
+      }
+      
+      // 最终确认是字符串
+      if (typeof url !== 'string') {
+        console.error('url 不是字符串类型！', typeof url, url)
+        url = String(url || '')
+      }
+      
       // 根据类型设置对应的URL
-      if (type === 'idCard') {
-        submitDocsForm.idCardUrl = res.data
+      if (type === 'idCardFront') {
+        submitDocsForm.idCardFrontUrl = url
+        console.log('设置 idCardFrontUrl:', url)
+      } else if (type === 'idCardBack') {
+        submitDocsForm.idCardBackUrl = url
+        console.log('设置 idCardBackUrl:', url)
       } else if (type === 'medicalReport') {
-        submitDocsForm.medicalReportUrl = res.data
+        submitDocsForm.medicalReportUrl = url
+        console.log('设置 medicalReportUrl:', url)
       } else if (type === 'contract') {
-        submitDocsForm.contractUrl = res.data
+        submitDocsForm.contractUrl = url
+        console.log('设置 contractUrl:', url)
       }
       ElMessage.success('文件上传成功')
     } else {
@@ -283,17 +330,21 @@ async function handleFileChange(file, type) {
 
 // 提交资料
 async function handlesubmitDocuments() {
-  if (!submitDocsForm.idCardUrl && !submitDocsForm.medicalReportUrl && !submitDocsForm.contractUrl) {
+  if (!submitDocsForm.idCardFrontUrl && !submitDocsForm.idCardBackUrl && !submitDocsForm.medicalReportUrl && !submitDocsForm.contractUrl) {
     ElMessage.warning('请至少提交一项入职资料')
     return
   }
   uploading.value = true
   try {
-    await submitDocuments(submitDocsForm.offerId, {
-      idCardUrl: submitDocsForm.idCardUrl,
-      medicalReportUrl: submitDocsForm.medicalReportUrl,
-      contractUrl: submitDocsForm.contractUrl
-    })
+    // 确保所有字段都是字符串，undefined 传空字符串
+    const data = {
+      idCardFrontUrl: submitDocsForm.idCardFrontUrl || '',
+      idCardBackUrl: submitDocsForm.idCardBackUrl || '',
+      medicalReportUrl: submitDocsForm.medicalReportUrl || '',
+      contractUrl: submitDocsForm.contractUrl || ''
+    }
+    console.log('提交资料数据:', data)  // 调试信息
+    await submitDocuments(submitDocsForm.offerId, data)
     ElMessage.success('资料提交成功，等待招聘者审核')
     submitDocsVisible.value = false
     loadData()

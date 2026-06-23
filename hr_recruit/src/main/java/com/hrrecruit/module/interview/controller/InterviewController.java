@@ -75,6 +75,12 @@ public class InterviewController {
     public Result<Void> evaluate(@PathVariable Long id, @RequestBody Map<String, Object> params) {
         String evaluation = (String) params.get("evaluation");
         Integer result = params.get("result") != null ? ((Number) params.get("result")).intValue() : null;
+        
+        // 强制要求必须填写面试结果
+        if (result == null) {
+            return Result.error("请选择面试结果（通过/不通过）");
+        }
+        
         interviewService.evaluate(id, evaluation, result);
         return Result.successMsg("评价提交成功");
     }

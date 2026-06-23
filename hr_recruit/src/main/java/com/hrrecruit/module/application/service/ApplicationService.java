@@ -26,8 +26,10 @@ public interface ApplicationService {
 
     /**
      * 不录用
+     * @param id 应聘记录ID
+     * @param refuseType 失败原因类型（必填）
      */
-    void reject(Long id);
+    void reject(Long id, Integer refuseType);
 
     /**
      * 更新备注/标签

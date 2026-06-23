@@ -24,15 +24,37 @@ public final class Constants {
 
     // ============ 应聘状态 ============
     /** 应聘状态：待筛选 */
-    public static final int APP_STATUS_PENDING     = 0;
+    public static final int APP_STATUS_PENDING          = 0;
     /** 应聘状态：通过筛选 */
-    public static final int APP_STATUS_PASSED      = 1;
+    public static final int APP_STATUS_PASSED           = 1;
     /** 应聘状态：面试中 */
-    public static final int APP_STATUS_INTERVIEWING = 2;
-    /** 应聘状态：录用 */
-    public static final int APP_STATUS_HIRED       = 3;
+    public static final int APP_STATUS_INTERVIEWING     = 2;
+    /** 应聘状态：待确认Offer（已发录用通知，等待候选人反馈） */
+    public static final int APP_STATUS_OFFER_PENDING    = 3;
     /** 应聘状态：不录用 */
-    public static final int APP_STATUS_REJECTED    = 4;
+    public static final int APP_STATUS_REJECTED         = 4;
+    /** 应聘状态：已接受Offer（待入职） */
+    public static final int APP_STATUS_OFFER_ACCEPTED   = 5;
+    /** 应聘状态：已入职（最终终态） */
+    public static final int APP_STATUS_ONBOARDED        = 6;
+    /** 应聘状态：候选人撤回 */
+    public static final int APP_STATUS_WITHDRAWN        = 7;
+
+    // ============ 失败原因类型 ============
+    /** 失败原因：简历淘汰 */
+    public static final int REFUSE_TYPE_RESUME          = 1;
+    /** 失败原因：面试淘汰 */
+    public static final int REFUSE_TYPE_INTERVIEW       = 2;
+    /** 失败原因：候选人拒Offer */
+    public static final int REFUSE_TYPE_CANDIDATE_REFUSE = 3;
+    /** 失败原因：材料不合格 */
+    public static final int REFUSE_TYPE_MATERIAL        = 4;
+    /** 失败原因：录用审批驳回 */
+    public static final int REFUSE_TYPE_APPROVAL        = 5;
+    /** 失败原因：候选人主动撤回 */
+    public static final int REFUSE_TYPE_WITHDRAW        = 6;
+    /** 失败原因：岗位关闭终止 */
+    public static final int REFUSE_TYPE_JOB_CLOSED      = 7;
 
     // ============ 面试状态 ============
     /** 面试状态：待面试 */

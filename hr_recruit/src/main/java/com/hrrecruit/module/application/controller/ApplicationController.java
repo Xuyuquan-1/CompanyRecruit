@@ -60,8 +60,9 @@ public class ApplicationController {
      */
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAuthority('application:interview')")
-    public Result<Void> reject(@PathVariable Long id) {
-        applicationService.reject(id);
+    public Result<Void> reject(@PathVariable Long id, @RequestBody Map<String, Integer> params) {
+        Integer refuseType = params.get("refuseType");
+        applicationService.reject(id, refuseType);
         return Result.successMsg("已标记为不录用");
     }
 

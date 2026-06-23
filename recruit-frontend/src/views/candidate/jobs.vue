@@ -27,11 +27,7 @@
         <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="title" label="岗位名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="department" label="部门" width="100" align="center" />
-        <el-table-column prop="experience" label="经验要求" width="100" align="center" />
-        <el-table-column prop="education" label="学历要求" width="100" align="center" />
-        <el-table-column prop="salary" label="薪资" width="120" align="center">
-          <template #default="{ row }">{{ formatSalary(row.salary) }}</template>
-        </el-table-column>
+        <el-table-column prop="headcount" label="招聘人数" width="100" align="center" />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)">
@@ -39,8 +35,8 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="publishTime" label="发布时间" width="160">
-          <template #default="{ row }">{{ formatDate(row.publishTime) }}</template>
+        <el-table-column prop="createTime" label="创建时间" width="160">
+          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
@@ -77,16 +73,16 @@
         <el-descriptions-item label="岗位名称" :span="2">{{ currentJob.title }}</el-descriptions-item>
         <el-descriptions-item label="部门">{{ currentJob.department }}</el-descriptions-item>
         <el-descriptions-item label="招聘人数">{{ currentJob.headcount || 1 }}</el-descriptions-item>
-        <el-descriptions-item label="经验要求">{{ currentJob.experience || '不限' }}</el-descriptions-item>
-        <el-descriptions-item label="学历要求">{{ currentJob.education || '不限' }}</el-descriptions-item>
-        <el-descriptions-item label="薪资范围" :span="2">{{ formatSalary(currentJob.salary) }}</el-descriptions-item>
-        <el-descriptions-item label="工作地点" :span="2">{{ currentJob.location || '待定' }}</el-descriptions-item>
+        <el-descriptions-item label="状态" :span="2">
+          <el-tag :type="statusTagType(currentJob.status)">{{ statusLabel(currentJob.status) }}</el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="岗位职责" :span="2">
           <div style="white-space:pre-wrap">{{ currentJob.description || '暂无' }}</div>
         </el-descriptions-item>
         <el-descriptions-item label="任职要求" :span="2">
           <div style="white-space:pre-wrap">{{ currentJob.requirements || '暂无' }}</div>
         </el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ formatDate(currentJob.createTime) }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
@@ -110,11 +106,6 @@
       />
       <el-table :data="myResumes" border stripe v-loading="resumeLoading" style="width:100%">
         <el-table-column prop="originalFilename" label="简历名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="tags" label="技能标签" min-width="150">
-          <template #default="{ row }">
-            <el-tag v-for="t in (row.tags||'').split(',').filter(Boolean)" :key="t" size="small" style="margin:2px">{{ t }}</el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" width="160">
           <template #default="{ row }">{{ formatDate(row.uploadTime) }}</template>
         </el-table-column>
@@ -187,7 +178,13 @@ async function checkAppliedJobs() {
     const res = await getMyApplications({ pageNum: 1, pageSize: 100 })
     if (res.code === 200) {
       const applications = res.data?.records || []
-      appliedJobs.value = new Set(applications.map(app => app.jobId))
+      console.log('应聘记录:', applications) // 调试信息
+      // 确保 jobId 存在
+      appliedJobs.value = new Set(applications
+        .filter(app => app.jobId) // 过滤掉没有 jobId 的记录
+        .map(app => app.jobId)
+      )
+      console.log('已投递的岗位ID集合:', appliedJobs.value)
     }
   } catch (e) {
     console.error('检查投递状态失败:', e)
@@ -250,7 +247,8 @@ async function confirmApply(resume) {
     })
     ElMessage.success('投递成功！')
     resumeVisible.value = false
-    appliedJobs.value.add(currentJob.value.id)
+    // 重新加载应聘记录，确保状态正确
+    await checkAppliedJobs()
     loadData()
   } catch (e) {
     console.error('投递失败:', e)
@@ -272,12 +270,6 @@ function statusLabel(status) {
 // 格式化日期
 function formatDate(d) {
   return d ? d.replace('T', ' ').substring(0, 16) : ''
-}
-
-// 格式化薪资
-function formatSalary(salary) {
-  if (!salary) return '面议'
-  return salary + 'k/月'
 }
 
 onMounted(() => {

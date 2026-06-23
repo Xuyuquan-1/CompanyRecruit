@@ -9,8 +9,8 @@ export function getApplicationById(id) {
 export function passApplication(id) {
   return request({ url: `/api/application/${id}/pass`, method: 'post' })
 }
-export function rejectApplication(id) {
-  return request({ url: `/api/application/${id}/reject`, method: 'post' })
+export function rejectApplication(id, refuseType) {
+  return request({ url: `/api/application/${id}/reject`, method: 'post', data: { refuseType } })
 }
 export function updateApplicationRemark(id, tags, remark) {
   return request({ url: `/api/application/${id}/remark`, method: 'put', data: { tags, remark } })

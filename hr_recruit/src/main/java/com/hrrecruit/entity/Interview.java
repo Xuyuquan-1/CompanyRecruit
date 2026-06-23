@@ -36,8 +36,7 @@ public class Interview {
     /** 面试评价 */
     private String evaluation;
 
-    /** 面试结果：0-未定，1-通过，2-不通过（数据库无此字段，仅内存使用） */
-    @TableField(exist = false)
+    /** 面试结果：0-未定，1-通过，2-不通过 */
     private Integer result;
 
     /** 应聘者姓名（关联查询） */
@@ -47,6 +46,10 @@ public class Interview {
     /** 岗位名称（关联查询） */
     @TableField(exist = false)
     private String jobTitle;
+
+    /** 已发放的Offer ID（关联查询，null表示未发放） */
+    @TableField(exist = false)
+    private Long offerId;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

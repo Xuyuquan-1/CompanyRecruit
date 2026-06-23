@@ -45,5 +45,5 @@ public interface OfferService {
     /**
      * 应聘者提交入职资料
      */
-    void submitDocuments(Long id, String idCardUrl, String medicalReportUrl, String contractUrl);
+    void submitDocuments(Long id, String idCardFrontUrl, String idCardBackUrl, String medicalReportUrl, String contractUrl);
 }

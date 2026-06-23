@@ -17,7 +17,6 @@
         <el-button type="primary" icon="Plus" @click="handleAdd">新增用户</el-button>
       </div>
       <el-table :data="pagedData" border stripe v-loading="loading" style="margin-top:10px;width:100%">
-        <el-table-column prop="id" label="ID" width="65" align="center" />
         <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
         <el-table-column prop="realName" label="姓名" min-width="100" />
         <el-table-column prop="phone" label="手机号" width="130" />

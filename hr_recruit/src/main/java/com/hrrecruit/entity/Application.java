@@ -25,8 +25,14 @@ public class Application {
     /** 应聘者用户ID */
     private Long candidateId;
 
-    /** 状态：0-待筛选，1-通过筛选，2-面试中，3-录用，4-不录用 */
+    /** 状态：0-待筛选，1-通过筛选，2-面试中，3-待确认Offer，4-不录用，5-已接受Offer(待入职)，6-已入职，7-候选人撤回 */
     private Integer status;
+
+    /** 结果归集：0-处理中 1-录用成功 2-应聘失败 */
+    private Integer result;
+
+    /** 失败细分：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-材料不合格 5-录用审批驳回 6-候选人主动撤回 7-岗位关闭终止 */
+    private Integer refuseType;
 
     /** 标签 */
     private String tags;
@@ -59,4 +65,16 @@ public class Application {
 
     @TableField(exist = false)
     private String phone;
+
+    /** Offer ID */
+    @TableField(exist = false)
+    private Long offerId;
+
+    /** Offer状态 */
+    @TableField(exist = false)
+    private Integer offerStatus;
+
+    /** Offer资料提交情况（JSON字符串） */
+    @TableField(exist = false)
+    private String offerDocsSubmitted;
 }

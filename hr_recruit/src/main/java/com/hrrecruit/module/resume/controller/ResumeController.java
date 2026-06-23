@@ -73,10 +73,10 @@ public class ResumeController {
     }
 
     /**
-     * 上传简历文件（应聘者/招聘人员均可上传）
+     * 上传简历文件（仅应聘者）
      */
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyAuthority('resume:upload', 'ROLE_CANDIDATE', 'ROLE_RECRUITER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_CANDIDATE')")
     public Result<Resume> upload(@RequestParam("file") MultipartFile file) {
         Resume resume = resumeService.upload(file);
         return Result.success("上传成功", resume);
