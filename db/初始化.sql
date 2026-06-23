@@ -11,6 +11,8 @@ CREATE DATABASE IF NOT EXISTS recruitment_db
 
 USE recruitment_db;
 
+
+
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 删表（逆序）
