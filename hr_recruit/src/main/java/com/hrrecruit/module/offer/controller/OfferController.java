@@ -73,7 +73,7 @@ public class OfferController {
      * 拒绝录用
      */
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAuthority('offer:list')")
+    @PreAuthorize("hasAnyAuthority('offer:list', 'ROLE_CANDIDATE')")
     public Result<Void> rejectOffer(@PathVariable Long id, @RequestBody Map<String, String> params) {
         String reason = params.get("reason");
         offerService.rejectOffer(id, reason);

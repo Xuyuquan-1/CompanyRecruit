@@ -11,11 +11,13 @@ import com.hrrecruit.entity.Employee;
 import com.hrrecruit.entity.JobPost;
 import com.hrrecruit.entity.Offer;
 import com.hrrecruit.entity.Resume;
+import com.hrrecruit.entity.SysUser;
 import com.hrrecruit.mapper.ApplicationMapper;
 import com.hrrecruit.mapper.EmployeeMapper;
 import com.hrrecruit.mapper.JobPostMapper;
 import com.hrrecruit.mapper.OfferMapper;
 import com.hrrecruit.mapper.ResumeMapper;
+import com.hrrecruit.mapper.SysUserMapper;
 import com.hrrecruit.module.notification.service.NotificationService;
 import com.hrrecruit.module.offer.dto.OfferDTO;
 import com.hrrecruit.module.offer.dto.OfferQueryDTO;
@@ -41,6 +43,7 @@ public class OfferServiceImpl implements OfferService {
     private final EmployeeMapper employeeMapper;
     private final ResumeMapper resumeMapper;
     private final JobPostMapper jobPostMapper;
+    private final SysUserMapper sysUserMapper;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -159,33 +162,56 @@ public class OfferServiceImpl implements OfferService {
             throw new BusinessException("应聘记录不存在");
         }
         
-        // 获取简历信息
-        Resume resume = resumeMapper.selectById(application.getResumeId());
-        
+        // 从 sys_user 表获取应聘者个人信息（优先级最高）
         String name = "未知";
         String phone = "";
         String email = "";
+        
+        if (application.getCandidateId() != null) {
+            SysUser sysUser = sysUserMapper.selectById(application.getCandidateId());
+            if (sysUser != null) {
+                name = sysUser.getRealName() != null && !sysUser.getRealName().isEmpty() ? sysUser.getRealName() : "未知";
+                phone = sysUser.getPhone() != null ? sysUser.getPhone() : "";
+                email = sysUser.getEmail() != null ? sysUser.getEmail() : "";
+                log.info("从sys_user获取用户信息: {}", name);
+            } else {
+                log.warn("未找到用户ID为{}的sys_user记录", application.getCandidateId());
+            }
+        }
+        
+        // 如果sys_user中没有完整信息，尝试从简历中补充
+        Resume resume = resumeMapper.selectById(application.getResumeId());
         String profileData = null;
         
-        // 尝试从简历中获取信息，如果简历未解析也不影响入职
         if (resume != null && resume.getParsedJson() != null) {
             try {
                 // 解析简历JSON获取个人信息
                 JsonNode resumeData = objectMapper.readTree(resume.getParsedJson());
-                name = resumeData.has("name") ? resumeData.get("name").asText() : "未知";
-                phone = resumeData.has("phone") ? resumeData.get("phone").asText() : "";
-                email = resumeData.has("email") ? resumeData.get("email").asText() : "";
+                // 只有当sys_user中没有这些信息时才从简历获取
+                if (name.equals("未知") && resumeData.has("name")) {
+                    name = resumeData.get("name").asText();
+                }
+                if ((phone == null || phone.isEmpty()) && resumeData.has("phone")) {
+                    phone = resumeData.get("phone").asText();
+                }
+                if ((email == null || email.isEmpty()) && resumeData.has("email")) {
+                    email = resumeData.get("email").asText();
+                }
                 profileData = resume.getParsedJson();
             } catch (Exception e) {
-                log.warn("解析简历失败，使用默认信息: {}", e.getMessage());
+                log.warn("解析简历失败: {}", e.getMessage());
             }
-        } else {
-            log.warn("简历未解析，将使用默认信息创建员工档案");
         }
         
         // 获取岗位信息（从Application关联的JobPost）
         String department = "";
         String position = "";
+        
+        JobPost jobPost = jobPostMapper.selectById(application.getJobId());
+        if (jobPost != null) {
+            department = jobPost.getDepartment() != null ? jobPost.getDepartment() : "";
+            position = jobPost.getTitle() != null ? jobPost.getTitle() : "";
+        }
         
         // 创建员工档案
         Employee employee = new Employee();

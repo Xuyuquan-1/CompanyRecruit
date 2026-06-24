@@ -67,13 +67,13 @@ public class OssCommonController {
      */
     @GetMapping("/downloadUrl")
     public Result<Map<String, String>> downloadUrl(@RequestParam("objectName") String objectName) {
-        // 安全校验：防止路径穿越攻击
-        if (objectName.contains("..") || objectName.contains("/")) {
+        // 安全校验：防止路径穿越攻击（只禁止 ..，允许正常的 / 路径分隔符）
+        if (objectName.contains("..")) {
             return Result.error("非法的文件路径");
         }
 
         try {
-            String signedUrl = aliOssUtil.getSignedUrl("upload/" + objectName, 3600);
+            String signedUrl = aliOssUtil.getSignedUrl(objectName, 3600);
             Map<String, String> result = new HashMap<>();
             result.put("downloadUrl", signedUrl);
             return Result.success("获取成功", result);

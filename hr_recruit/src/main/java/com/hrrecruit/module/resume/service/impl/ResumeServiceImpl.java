@@ -47,6 +47,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final ResumeMapper resumeMapper;
     private final OssUtil ossUtil;
     private final ChatClient chatClient;
+    private final com.hrrecruit.mapper.ApplicationMapper applicationMapper;
 
     @Value("${file.upload-path:./uploads/}")
     private String uploadPath;
@@ -223,11 +224,26 @@ public class ResumeServiceImpl implements ResumeService {
     @Override
     public void delete(Long id) {
         Resume resume = getById(id);
+        
+        // 检查是否存在关联的应聘记录
+        Long count = applicationMapper.selectCount(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.hrrecruit.entity.Application>()
+                .eq(com.hrrecruit.entity.Application::getResumeId, id)
+                .eq(com.hrrecruit.entity.Application::getDeleted, 0)
+        );
+        
+        if (count > 0) {
+            throw new BusinessException("该简历已被应聘者使用，存在" + count + "条应聘记录，无法删除");
+        }
+        
+        // 删除文件
         if (isLocalStorage(resume.getFilePath())) {
             deleteLocalFile(resume.getFilePath());
         } else {
             ossUtil.delete(resume.getFilePath());
         }
+        
+        // 删除简历记录
         resumeMapper.deleteById(id);
     }
 

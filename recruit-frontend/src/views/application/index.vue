@@ -68,9 +68,6 @@
         <el-descriptions-item label="状态">{{ statusLabel(currentApp.status) }}</el-descriptions-item>
       </el-descriptions>
       <el-form style="margin-top:15px" label-width="80px">
-        <el-form-item label="标签">
-          <el-input v-model="currentApp.tags" placeholder="逗号分隔，如：211,985,Java" />
-        </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="currentApp.remark" type="textarea" :rows="3" placeholder="备注信息" />
         </el-form-item>
@@ -88,7 +85,7 @@
         <el-form-item label="应聘岗位">{{ arrangeTarget.jobTitle }}</el-form-item>
         <el-form-item label="面试时间" required>
           <el-date-picker v-model="arrangeForm.interviewTime" type="datetime" placeholder="选择面试时间"
-            value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" />
+            value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" :disabled-date="disabledDate" />
         </el-form-item>
         <el-form-item label="面试地点">
           <el-input v-model="arrangeForm.location" placeholder="会议室/线上链接" />
@@ -148,7 +145,7 @@ const detailVisible = ref(false), currentApp = ref({})
 function handleView(row) { currentApp.value = { ...row }; detailVisible.value = true }
 async function saveRemark() {
   try {
-    await updateApplicationRemark(currentApp.value.id, currentApp.value.tags, currentApp.value.remark)
+    await updateApplicationRemark(currentApp.value.id, null, currentApp.value.remark)
     ElMessage.success('保存成功'); detailVisible.value = false; loadData()
   } catch {}
 }
@@ -164,7 +161,6 @@ function openArrange(row) {
 }
 async function submitArrange() {
   if (!arrangeForm.interviewTime) { ElMessage.warning('请选择面试时间'); return }
-  if (new Date(arrangeForm.interviewTime).getTime() <= Date.now()) { ElMessage.warning('面试时间必须晚于当前时间'); return }
   try {
     await arrangeInterview({
       applicationId: arrangeTarget.value.id,
@@ -176,6 +172,13 @@ async function submitArrange() {
     arrangeVisible.value = false
     loadData()
   } catch {}
+}
+
+// 禁用昨日及之前的日期（今日可以选择）
+function disabledDate(time) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return time.getTime() < today.getTime()
 }
 
 async function submitOffer() {

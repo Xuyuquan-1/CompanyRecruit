@@ -344,7 +344,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { getOfferPage, confirmOnboard, rejectOffer, sendOffer, acceptOffer, submitDocuments } from '../../api/offer'
-import { uploadFile } from '../../api/oss'
+import { uploadFile, getDownloadUrl } from '../../api/oss'
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
@@ -615,42 +615,84 @@ function isAllDocsSubmitted(row) {
 }
 
 // 预览资料文件
-function previewDoc(row, docType) {
+async function previewDoc(row, docType) {
   try {
     const docs = typeof row.docsSubmitted === 'string' ? JSON.parse(row.docsSubmitted) : row.docsSubmitted
     const urlKey = docType + 'Url'
-    const url = docs[urlKey]
-    if (url) {
-      window.open(url, '_blank')
-    } else {
+    const ossUrl = docs[urlKey]
+    
+    if (!ossUrl) {
       ElMessage.warning('文件URL不存在')
+      return
     }
-  } catch {
-    ElMessage.error('解析资料信息失败')
+    
+    // 如果是OSS地址，需要获取签名URL
+    if (ossUrl.includes('.aliyuncs.com/')) {
+      // 提取objectName（从 .com/ 后面的部分）
+      let objectName = ossUrl.substring(ossUrl.indexOf('.aliyuncs.com/') + 13)
+      // 去除可能的前导斜杠
+      if (objectName.startsWith('/')) {
+        objectName = objectName.substring(1)
+      }
+      const res = await getDownloadUrl(objectName)
+      if (res.code === 200 && res.data.downloadUrl) {
+        window.open(res.data.downloadUrl, '_blank')
+      } else {
+        ElMessage.error('获取下载链接失败')
+      }
+    } else {
+      // 本地存储直接打开
+      window.open(ossUrl, '_blank')
+    }
+  } catch (e) {
+    console.error('预览失败:', e)
+    ElMessage.error('预览失败')
   }
 }
 
 // 下载单个资料文件
-function downloadDoc(row, docType, fileName) {
+async function downloadDoc(row, docType, fileName) {
   try {
     const docs = typeof row.docsSubmitted === 'string' ? JSON.parse(row.docsSubmitted) : row.docsSubmitted
     const urlKey = docType + 'Url'
-    const url = docs[urlKey]
-    if (url) {
-      // 创建隐藏的a标签进行下载
-      const link = document.createElement('a')
-      link.href = url
-      link.download = fileName // 设置下载文件名
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      ElMessage.success(`开始下载: ${fileName}`)
-    } else {
+    const ossUrl = docs[urlKey]
+    
+    if (!ossUrl) {
       ElMessage.warning('文件URL不存在')
+      return
     }
-  } catch {
-    ElMessage.error('解析资料信息失败')
+    
+    let downloadUrl = ossUrl
+    
+    // 如果是OSS地址，需要获取签名URL
+    if (ossUrl.includes('.aliyuncs.com/')) {
+      // 提取objectName（从 .com/ 后面的部分）
+      let objectName = ossUrl.substring(ossUrl.indexOf('.aliyuncs.com/') + 13)
+      // 去除可能的前导斜杠
+      if (objectName.startsWith('/')) {
+        objectName = objectName.substring(1)
+      }
+      const res = await getDownloadUrl(objectName)
+      if (res.code === 200 && res.data.downloadUrl) {
+        downloadUrl = res.data.downloadUrl
+      } else {
+        ElMessage.error('获取下载链接失败')
+        return
+      }
+    }
+    
+    // 创建隐藏的a标签进行下载
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName // 设置下载文件名
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    ElMessage.success(`开始下载: ${fileName}`)
+  } catch (e) {
+    console.error('下载失败:', e)
+    ElMessage.error('下载失败')
   }
 }
 
@@ -672,10 +714,29 @@ async function downloadAllDocs() {
     let downloadCount = 0
     for (const file of files) {
       const urlKey = file.type + 'Url'
-      const url = docs[urlKey]
-      if (url) {
+      const ossUrl = docs[urlKey]
+      
+      if (ossUrl) {
+        let downloadUrl = ossUrl
+        
+        // 如果是OSS地址，需要获取签名URL
+        if (ossUrl.includes('.aliyuncs.com/')) {
+          let objectName = ossUrl.substring(ossUrl.indexOf('.aliyuncs.com/') + 13)
+          // 去除可能的前导斜杠
+          if (objectName.startsWith('/')) {
+            objectName = objectName.substring(1)
+          }
+          const res = await getDownloadUrl(objectName)
+          if (res.code === 200 && res.data.downloadUrl) {
+            downloadUrl = res.data.downloadUrl
+          } else {
+            console.error(`获取${file.name}下载链接失败`)
+            continue
+          }
+        }
+        
         const link = document.createElement('a')
-        link.href = url
+        link.href = downloadUrl
         link.download = `${currentOffer.value.candidateName || '应聘者'}_${file.name}`
         link.target = '_blank'
         document.body.appendChild(link)

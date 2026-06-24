@@ -4,7 +4,7 @@
     <el-card shadow="never" class="search-card">
       <el-form inline>
         <el-form-item label="岗位名称">
-          <el-input v-model="queryForm.keyword" placeholder="搜索岗位" clearable style="width:200px" />
+          <el-input v-model="queryForm.title" placeholder="搜索岗位" clearable style="width:200px" />
         </el-form-item>
         <el-form-item label="部门">
           <el-select v-model="queryForm.department" placeholder="全部" clearable style="width:150px">
@@ -135,7 +135,7 @@ const userStore = useUserStore()
 const queryForm = reactive({
   pageNum: 1,
   pageSize: 10,
-  keyword: '',
+  title: '',
   department: ''
 })
 
@@ -204,7 +204,7 @@ function handleSearch() {
 
 // 重置
 function handleReset() {
-  queryForm.keyword = ''
+  queryForm.title = ''
   queryForm.department = ''
   queryForm.pageNum = 1
   loadData()

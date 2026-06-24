@@ -95,10 +95,20 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
+    @Transactional
     public void cancel(Long id) {
         Interview interview = getById(id);
         interview.setStatus(Constants.INTERVIEW_STATUS_CANCELLED);
         interviewMapper.updateById(interview);
+        
+        // 更新应聘记录状态为不录用
+        Application application = applicationMapper.selectById(interview.getApplicationId());
+        if (application != null) {
+            application.setStatus(Constants.APP_STATUS_REJECTED);
+            application.setResult(2); // 应聘失败
+            application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
+            applicationMapper.updateById(application);
+        }
     }
 
     @Override
@@ -119,6 +129,8 @@ public class InterviewServiceImpl implements InterviewService {
             } else {
                 // 面试不通过：设置为不录用
                 application.setStatus(Constants.APP_STATUS_REJECTED);
+                application.setResult(2); // 应聘失败
+                application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
             }
             applicationMapper.updateById(application);
         }
