@@ -5,6 +5,8 @@ spring:
   application:
     name: hr-recruit
 
+
+
   profiles:
     active: dev
 
