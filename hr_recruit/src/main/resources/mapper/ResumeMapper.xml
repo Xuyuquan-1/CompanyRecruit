@@ -11,28 +11,52 @@
     <select id="selectPageWithFilter" resultType="com.hrrecruit.entity.Resume">
         SELECT r.*,
                (
-                   SELECT a.id FROM application a 
-                   WHERE a.resume_id = r.id AND a.deleted = 0 
-                   ORDER BY a.apply_time DESC 
+                   SELECT a.id FROM application a
+                   WHERE a.resume_id = r.id AND a.deleted = 0
+                   <if test="jobId != null">
+                       AND a.job_id = #{jobId}
+                   </if>
+                   <if test="applicationStatus != null">
+                       AND a.status = #{applicationStatus}
+                   </if>
+                   ORDER BY a.apply_time DESC
                    LIMIT 1
                ) AS applicationId,
                (
-                   SELECT a.job_id FROM application a 
-                   WHERE a.resume_id = r.id AND a.deleted = 0 
-                   ORDER BY a.apply_time DESC 
+                   SELECT a.job_id FROM application a
+                   WHERE a.resume_id = r.id AND a.deleted = 0
+                   <if test="jobId != null">
+                       AND a.job_id = #{jobId}
+                   </if>
+                   <if test="applicationStatus != null">
+                       AND a.status = #{applicationStatus}
+                   </if>
+                   ORDER BY a.apply_time DESC
                    LIMIT 1
                ) AS jobId,
                (
-                   SELECT j.title FROM application a 
+                   SELECT j.title FROM application a
                    LEFT JOIN job_post j ON a.job_id = j.id AND j.deleted = 0
-                   WHERE a.resume_id = r.id AND a.deleted = 0 
-                   ORDER BY a.apply_time DESC 
+                   WHERE a.resume_id = r.id AND a.deleted = 0
+                   <if test="jobId != null">
+                       AND a.job_id = #{jobId}
+                   </if>
+                   <if test="applicationStatus != null">
+                       AND a.status = #{applicationStatus}
+                   </if>
+                   ORDER BY a.apply_time DESC
                    LIMIT 1
                ) AS jobTitle,
                (
-                   SELECT a.status FROM application a 
-                   WHERE a.resume_id = r.id AND a.deleted = 0 
-                   ORDER BY a.apply_time DESC 
+                   SELECT a.status FROM application a
+                   WHERE a.resume_id = r.id AND a.deleted = 0
+                   <if test="jobId != null">
+                       AND a.job_id = #{jobId}
+                   </if>
+                   <if test="applicationStatus != null">
+                       AND a.status = #{applicationStatus}
+                   </if>
+                   ORDER BY a.apply_time DESC
                    LIMIT 1
                ) AS applicationStatus
         FROM resume r

@@ -21,6 +21,14 @@
           />
         </el-form-item>
         <el-form-item>
+          <el-radio-group v-model="dateRangeType" size="small" @change="handleDateRangeChange">
+            <el-radio-button label="week">最近7天</el-radio-button>
+            <el-radio-button label="month">本月</el-radio-button>
+            <el-radio-button label="year">最近一年</el-radio-button>
+            <el-radio-button label="all">全部</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" icon="Search" @click="loadData">查询</el-button>
           <el-button icon="Refresh" @click="resetFilter">重置</el-button>
         </el-form-item>
@@ -30,8 +38,11 @@
           </el-button>
         </el-form-item>
       </el-form>
+      <div style="margin-top: 8px; color: #606266; font-size: 13px">
+        当前统计范围：{{ queryRangeText }}
+      </div>
     </el-card>
-
+    
     <!-- 统计卡片 -->
     <el-row :gutter="16" style="margin-top: 16px">
       <el-col :span="6">
@@ -95,6 +106,7 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-empty v-if="progressList.length === 0 && !loading" description="所选时间范围内暂无招聘进度数据" />
     </el-card>
 
     <!-- 招聘效果分析 -->
@@ -177,19 +189,41 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-empty v-if="jobAnalysisList.length === 0 && !loading" description="所选时间范围内暂无岗位分析数据" />
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getRecruitmentProgress, getRecruitmentEffect, exportReportExcel } from '../../api/report'
 
-// 筛选表单
+// 日期格式化辅助函数
+function formatDateValue(date) {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 快捷日期范围类型
+const dateRangeType = ref('month')
+
+// 当前生效的查询范围文本
+const queryRangeText = computed(() => {
+  if (filterForm.startDate && filterForm.endDate) {
+    return `${filterForm.startDate} 至 ${filterForm.endDate}`
+  }
+  return '全部时间'
+})
+
+// 筛选表单，默认本月
+const today = new Date()
 const filterForm = reactive({
-  startDate: '',
-  endDate: ''
+  startDate: formatDateValue(new Date(today.getFullYear(), today.getMonth(), 1)),
+  endDate: formatDateValue(today)
 })
 
 const loading = ref(false)
@@ -208,6 +242,8 @@ async function loadData() {
     const params = {}
     if (filterForm.startDate) params.startDate = filterForm.startDate
     if (filterForm.endDate) params.endDate = filterForm.endDate
+
+    console.log('报表请求参数:', params)
 
     // 并行加载进度统计和效果分析
     const [progressRes, effectRes] = await Promise.all([
@@ -242,10 +278,34 @@ async function loadData() {
   }
 }
 
+// 快捷日期范围切换
+function handleDateRangeChange(type) {
+  console.log('切换时间范围:', type)
+  const now = new Date()
+  if (type === 'week') {
+    const weekAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+    filterForm.startDate = formatDateValue(weekAgo)
+    filterForm.endDate = formatDateValue(now)
+  } else if (type === 'month') {
+    filterForm.startDate = formatDateValue(new Date(now.getFullYear(), now.getMonth(), 1))
+    filterForm.endDate = formatDateValue(now)
+  } else if (type === 'year') {
+    const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+    filterForm.startDate = formatDateValue(yearAgo)
+    filterForm.endDate = formatDateValue(now)
+  } else if (type === 'all') {
+    filterForm.startDate = ''
+    filterForm.endDate = ''
+  }
+  loadData()
+}
+
 // 重置筛选
 function resetFilter() {
-  filterForm.startDate = ''
-  filterForm.endDate = ''
+  dateRangeType.value = 'month'
+  const now = new Date()
+  filterForm.startDate = formatDateValue(new Date(now.getFullYear(), now.getMonth(), 1))
+  filterForm.endDate = formatDateValue(now)
   loadData()
 }
 

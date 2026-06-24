@@ -60,11 +60,9 @@ public class ReportServiceImpl implements ReportService {
             item.put("department", job.getDepartment());
             item.put("headcount", job.getHeadcount());
             
-            // 统计该岗位的应聘数量
+            // 统计该岗位在时间段内的应聘数量（按投递时间）
             LambdaQueryWrapper<Application> appWrapper = new LambdaQueryWrapper<Application>()
                     .eq(Application::getJobId, job.getId());
-            
-            // 添加时间筛选
             if (startDate != null) {
                 appWrapper.ge(Application::getApplyTime, startDate.atStartOfDay());
             }
@@ -74,36 +72,52 @@ public class ReportServiceImpl implements ReportService {
             
             List<Application> applications = applicationMapper.selectList(appWrapper);
             long applicationCount = applications.size();
+            List<Long> appIds = applications.stream().map(Application::getId).collect(Collectors.toList());
             
             log.debug("岗位[{}] 投递数：{}", job.getTitle(), applicationCount);
             
-            // 统计面试人数
-            List<Long> appIds = applications.stream().map(Application::getId).collect(Collectors.toList());
+            // 统计该岗位在时间段内的面试人数（按面试时间）
             long interviewCount = 0;
             if (!appIds.isEmpty()) {
-                interviewCount = interviewMapper.selectCount(
-                        new LambdaQueryWrapper<Interview>().in(Interview::getApplicationId, appIds)
-                );
+                LambdaQueryWrapper<Interview> interviewWrapper = new LambdaQueryWrapper<Interview>()
+                        .in(Interview::getApplicationId, appIds);
+                if (startDate != null) {
+                    interviewWrapper.ge(Interview::getInterviewTime, startDate.atStartOfDay());
+                }
+                if (endDate != null) {
+                    interviewWrapper.le(Interview::getInterviewTime, endDate.plusDays(1).atStartOfDay());
+                }
+                interviewCount = interviewMapper.selectCount(interviewWrapper);
             }
             
-            // 统计录用人数
+            // 统计该岗位在时间段内的录用人数（按Offer发送时间）
             long offerCount = 0;
             if (!appIds.isEmpty()) {
-                offerCount = offerMapper.selectCount(
-                        new LambdaQueryWrapper<Offer>()
-                                .in(Offer::getApplicationId, appIds)
-                                .eq(Offer::getStatus, Constants.OFFER_STATUS_ACCEPTED)
-                );
+                LambdaQueryWrapper<Offer> offerWrapper = new LambdaQueryWrapper<Offer>()
+                        .in(Offer::getApplicationId, appIds)
+                        .eq(Offer::getStatus, Constants.OFFER_STATUS_ACCEPTED);
+                if (startDate != null) {
+                    offerWrapper.ge(Offer::getOfferTime, startDate.atStartOfDay());
+                }
+                if (endDate != null) {
+                    offerWrapper.le(Offer::getOfferTime, endDate.plusDays(1).atStartOfDay());
+                }
+                offerCount = offerMapper.selectCount(offerWrapper);
             }
             
-            // 统计入职人数
+            // 统计该岗位在时间段内的入职人数（按Offer发送时间）
             long onboardCount = 0;
             if (!appIds.isEmpty()) {
-                onboardCount = offerMapper.selectCount(
-                        new LambdaQueryWrapper<Offer>()
-                                .in(Offer::getApplicationId, appIds)
-                                .eq(Offer::getStatus, Constants.OFFER_STATUS_ONBOARDED)
-                );
+                LambdaQueryWrapper<Offer> offerWrapper = new LambdaQueryWrapper<Offer>()
+                        .in(Offer::getApplicationId, appIds)
+                        .eq(Offer::getStatus, Constants.OFFER_STATUS_ONBOARDED);
+                if (startDate != null) {
+                    offerWrapper.ge(Offer::getOfferTime, startDate.atStartOfDay());
+                }
+                if (endDate != null) {
+                    offerWrapper.le(Offer::getOfferTime, endDate.plusDays(1).atStartOfDay());
+                }
+                onboardCount = offerMapper.selectCount(offerWrapper);
             }
             
             // 计算转化率
@@ -148,7 +162,7 @@ public class ReportServiceImpl implements ReportService {
         
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 构建查询条件
+        // 构建应聘查询条件（按投递时间）
         LambdaQueryWrapper<Application> appWrapper = new LambdaQueryWrapper<>();
         if (jobId != null) {
             appWrapper.eq(Application::getJobId, jobId);
@@ -178,29 +192,41 @@ public class ReportServiceImpl implements ReportService {
                 .filter(a -> a.getStatus() != null && a.getStatus() == Constants.APP_STATUS_REJECTED)
                 .count();
         
-        // 面试统计
+        // 面试统计（按面试时间）
         List<Long> appIds = applications.stream().map(Application::getId).collect(Collectors.toList());
         long totalInterviews = 0;
         long interviewPassed = 0;
         if (!appIds.isEmpty()) {
-            List<Interview> interviews = interviewMapper.selectList(
-                    new LambdaQueryWrapper<Interview>().in(Interview::getApplicationId, appIds)
-            );
+            LambdaQueryWrapper<Interview> interviewWrapper = new LambdaQueryWrapper<Interview>()
+                    .in(Interview::getApplicationId, appIds);
+            if (startDate != null) {
+                interviewWrapper.ge(Interview::getInterviewTime, startDate.atStartOfDay());
+            }
+            if (endDate != null) {
+                interviewWrapper.le(Interview::getInterviewTime, endDate.plusDays(1).atStartOfDay());
+            }
+            List<Interview> interviews = interviewMapper.selectList(interviewWrapper);
             totalInterviews = interviews.size();
             interviewPassed = interviews.stream()
                     .filter(i -> i.getResult() != null && i.getResult() == Constants.INTERVIEW_RESULT_PASS)
                     .count();
         }
         
-        // 录用统计
+        // 录用统计（按Offer发送时间）
         long totalOffers = 0;
         long offersAccepted = 0;
         long offersRejected = 0;
         long onboarded = 0;
         if (!appIds.isEmpty()) {
-            List<Offer> offers = offerMapper.selectList(
-                    new LambdaQueryWrapper<Offer>().in(Offer::getApplicationId, appIds)
-            );
+            LambdaQueryWrapper<Offer> offerWrapper = new LambdaQueryWrapper<Offer>()
+                    .in(Offer::getApplicationId, appIds);
+            if (startDate != null) {
+                offerWrapper.ge(Offer::getOfferTime, startDate.atStartOfDay());
+            }
+            if (endDate != null) {
+                offerWrapper.le(Offer::getOfferTime, endDate.plusDays(1).atStartOfDay());
+            }
+            List<Offer> offers = offerMapper.selectList(offerWrapper);
             totalOffers = offers.size();
             offersAccepted = offers.stream()
                     .filter(o -> o.getStatus() != null && o.getStatus() == Constants.OFFER_STATUS_ACCEPTED)
@@ -232,15 +258,20 @@ public class ReportServiceImpl implements ReportService {
                 List<Application> jobApps = entry.getValue();
                 long jobAppCount = jobApps.size();
                 
-                // 该岗位录用数
+                // 该岗位在时间段内的入职数（按Offer发送时间）
                 List<Long> jobAppIds = jobApps.stream().map(Application::getId).collect(Collectors.toList());
                 long jobOnboardCount = 0;
                 if (!jobAppIds.isEmpty()) {
-                    jobOnboardCount = offerMapper.selectCount(
-                            new LambdaQueryWrapper<Offer>()
-                                    .in(Offer::getApplicationId, jobAppIds)
-                                    .eq(Offer::getStatus, Constants.OFFER_STATUS_ONBOARDED)
-                    );
+                    LambdaQueryWrapper<Offer> offerWrapper = new LambdaQueryWrapper<Offer>()
+                            .in(Offer::getApplicationId, jobAppIds)
+                            .eq(Offer::getStatus, Constants.OFFER_STATUS_ONBOARDED);
+                    if (startDate != null) {
+                        offerWrapper.ge(Offer::getOfferTime, startDate.atStartOfDay());
+                    }
+                    if (endDate != null) {
+                        offerWrapper.le(Offer::getOfferTime, endDate.plusDays(1).atStartOfDay());
+                    }
+                    jobOnboardCount = offerMapper.selectCount(offerWrapper);
                 }
                 
                 Map<String, Object> jobItem = new LinkedHashMap<>();
