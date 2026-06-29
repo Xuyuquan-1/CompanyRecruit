@@ -36,10 +36,6 @@
                 <el-icon><WarningFilled /></el-icon>
                 失败原因：{{ getRefuseReason(row.refuseType) }}
               </div>
-              <div v-if="row.status === 7" style="margin-top: 8px; color: #909399; font-size: 12px">
-                <el-icon><InfoFilled /></el-icon>
-                状态：候选人主动撤回
-              </div>
             </div>
           </template>
         </el-table-column>
@@ -112,7 +108,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { WarningFilled, InfoFilled } from '@element-plus/icons-vue'
+import { WarningFilled } from '@element-plus/icons-vue'
 import { getMyApplications } from '../../api/application'
 
 // 查询表单
@@ -170,8 +166,7 @@ function statusType(s) {
     3: 'warning',   // 待确认Offer
     4: 'danger',    // 不录用
     5: 'success',   // 已接受Offer(待入职)
-    6: 'success',   // 已入职
-    7: 'info'       // 候选人撤回
+    6: 'success'    // 已入职
   }
   return map[s] || 'info'
 }
@@ -185,8 +180,7 @@ function statusLabel(s) {
     3: '待确认Offer',
     4: '不录用',
     5: '已接受Offer(待入职)',
-    6: '已入职',
-    7: '候选人撤回'
+    6: '已入职'
   }
   return map[s] || '未知'
 }
@@ -200,8 +194,7 @@ function getProcessStep(status, offerStatus, docsSubmitted) {
     3: 4,  // 待确认Offer → 第4步
     4: 0,  // 不录用 → 不亮任何步骤（失败）
     5: checkDocsStep(offerStatus, docsSubmitted),  // 已接受Offer → 根据资料提交情况判断
-    6: 8,  // 已入职 → 第8步（最终步）
-    7: 0   // 候选人撤回 → 不亮任何步骤
+    6: 8   // 已入职 → 第8步（最终步）
   }
   return stepMap[status] || 0
 }
@@ -240,8 +233,8 @@ function checkDocsStep(offerStatus, docsSubmitted) {
 function getStepStatus(row, stepIndex) {
   const status = row.status
   
-  // 不录用或撤回：所有步骤显示失败
-  if (status === 4 || status === 7) {
+  // 不录用：所有步骤显示失败
+  if (status === 4) {
     return 'error'
   }
   
@@ -266,10 +259,8 @@ function getRefuseReason(refuseType) {
     1: '简历筛选未通过',
     2: '面试未通过',
     3: '候选人拒绝Offer',
-    4: '材料审核不合格',
-    5: '录用审批驳回',
-    6: '候选人主动撤回',
-    7: '岗位已关闭'
+    4: '审批不通过',
+    5: '岗位已关闭'
   }
   return reasonMap[refuseType] || '未知原因'
 }

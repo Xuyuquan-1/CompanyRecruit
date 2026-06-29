@@ -84,6 +84,7 @@ public class OfferServiceImpl implements OfferService {
 
         // 更新应聘状态为“待确认Offer”
         application.setStatus(Constants.APP_STATUS_OFFER_PENDING);
+        application.setRemark("已发送录用通知，薪资：" + dto.getSalary() + "，预计入职日期：" + dto.getExpectedJoinDate().toString());
         applicationMapper.updateById(application);
         
         // 自动发送录用通知
@@ -239,6 +240,7 @@ public class OfferServiceImpl implements OfferService {
         // 更新应聘记录状态为“已入职”
         application.setStatus(Constants.APP_STATUS_ONBOARDED);
         application.setResult(1); // 录用成功
+        application.setRemark("已确认入职，入职日期：" + joinDate.toString());
         applicationMapper.updateById(application);
         log.info("应聘记录状态更新为已入职: applicationId={}", application.getId());
     }
@@ -247,9 +249,9 @@ public class OfferServiceImpl implements OfferService {
     @Transactional
     public void rejectOffer(Long id, String reason) {
         Offer offer = getById(id);
-        // 只有待确认状态的录用才能被拒绝
-        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_PENDING) {
-            throw new BusinessException("只有待确认状态的录用才能被拒绝");
+        // 只有待确认或已接受状态的录用才能被拒绝
+        if (offer.getStatus() == null || (offer.getStatus() != Constants.OFFER_STATUS_PENDING && offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED)) {
+            throw new BusinessException("只有待确认或已接受状态的录用才能被拒绝");
         }
         
         offer.setStatus(Constants.OFFER_STATUS_REJECTED);
@@ -261,6 +263,7 @@ public class OfferServiceImpl implements OfferService {
             application.setStatus(Constants.APP_STATUS_REJECTED);
             application.setResult(2); // 应聘失败
             application.setRefuseType(Constants.REFUSE_TYPE_CANDIDATE_REFUSE);
+            application.setRemark("候选人拒绝Offer" + (reason != null && !reason.isEmpty() ? "，原因：" + reason : ""));
             applicationMapper.updateById(application);
         }
     }
@@ -281,6 +284,7 @@ public class OfferServiceImpl implements OfferService {
         Application application = applicationMapper.selectById(offer.getApplicationId());
         if (application != null) {
             application.setStatus(Constants.APP_STATUS_OFFER_ACCEPTED);
+            application.setRemark("候选人已接受Offer，待提交入职资料");
             applicationMapper.updateById(application);
         }
     }

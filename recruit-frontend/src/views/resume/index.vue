@@ -320,12 +320,12 @@ async function handleReject(row) {
   if (!row.applicationId) { ElMessage.warning('该简历尚未投递到岗位，无法操作'); return }
   try {
     const { value: refuseType } = await ElMessageBox.prompt(
-      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-材料不合格 5-录用审批驳回 6-候选人主动撤回 7-岗位关闭终止',
+      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-审批不通过 5-岗位关闭终止',
       '不录用原因',
       {
-        inputPlaceholder: '输入原因编号（1-7）',
-        inputPattern: /^[1-7]$/,
-        inputErrorMessage: '请输入1-7之间的数字'
+        inputPlaceholder: '输入原因编号（1-5）',
+        inputPattern: /^[1-5]$/,
+        inputErrorMessage: '请输入1-5之间的数字'
       }
     )
     await rejectApplication(row.applicationId, parseInt(refuseType))
@@ -360,8 +360,7 @@ function applicationStatusLabel(s) {
     3: '待确认Offer',
     4: '不录用',
     5: '已接受Offer(待入职)',
-    6: '已入职',
-    7: '候选人撤回'
+    6: '已入职'
   }
   return map[s] || '未知'
 }

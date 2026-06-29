@@ -71,6 +71,7 @@ public class InterviewServiceImpl implements InterviewService {
         interviewMapper.insert(interview);
 
         application.setStatus(Constants.APP_STATUS_INTERVIEWING);
+        application.setRemark("已安排面试，面试官：" + dto.getInterviewerName() + "，面试时间：" + dto.getInterviewTime().toString());
         applicationMapper.updateById(application);
         
         // 自动发送面试通知
@@ -107,6 +108,7 @@ public class InterviewServiceImpl implements InterviewService {
             application.setStatus(Constants.APP_STATUS_REJECTED);
             application.setResult(2); // 应聘失败
             application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
+            application.setRemark("面试已取消，标记为不录用");
             applicationMapper.updateById(application);
         }
     }
@@ -126,11 +128,13 @@ public class InterviewServiceImpl implements InterviewService {
                 // 面试通过：保持status=2（面试中），表示面试已完成，可以发放Offer
                 // HR会根据面试结果决定是否发放Offer
                 application.setStatus(Constants.APP_STATUS_INTERVIEWING);
+                application.setRemark("面试评价完成，结果：通过");
             } else {
                 // 面试不通过：设置为不录用
                 application.setStatus(Constants.APP_STATUS_REJECTED);
                 application.setResult(2); // 应聘失败
                 application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
+                application.setRemark("面试评价完成，结果：不通过");
             }
             applicationMapper.updateById(application);
         }
