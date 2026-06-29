@@ -19,6 +19,7 @@
 CREATE DATABASE IF NOT EXISTS `recruitment_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
 USE `recruitment_db`;
 
+
 -- 导出  表 recruitment_db.ai_chat_history 结构
 CREATE TABLE IF NOT EXISTS `ai_chat_history` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
