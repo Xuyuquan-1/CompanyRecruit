@@ -1,339 +1,429 @@
 <template>
-  <div class="report-page">
-    <!-- 筛选条件 -->
+  <div class="report-dashboard">
+    <!-- 顶部：全局筛选栏 -->
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="filterForm">
-        <el-form-item label="统计时间">
-          <el-date-picker
-            v-model="filterForm.startDate"
-            type="date"
-            placeholder="开始日期"
-            value-format="YYYY-MM-DD"
-            style="width: 180px"
-          />
-          <span style="margin: 0 8px">至</span>
-          <el-date-picker
-            v-model="filterForm.endDate"
-            type="date"
-            placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 180px"
-          />
-        </el-form-item>
-        <el-form-item>
+        <el-form-item label="时间范围">
           <el-radio-group v-model="dateRangeType" size="small" @change="handleDateRangeChange">
-            <el-radio-button label="week">最近7天</el-radio-button>
-            <el-radio-button label="month">本月</el-radio-button>
-            <el-radio-button label="year">最近一年</el-radio-button>
             <el-radio-button label="all">全部</el-radio-button>
+            <el-radio-button label="month">本月</el-radio-button>
+            <el-radio-button label="quarter">本季度</el-radio-button>
+            <el-radio-button label="half">近半年</el-radio-button>
+            <el-radio-button label="custom">自定义</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="loadData">查询</el-button>
-          <el-button icon="Refresh" @click="resetFilter">重置</el-button>
+        <el-form-item v-if="dateRangeType === 'custom'">
+          <el-date-picker
+            v-model="filterForm.dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            @change="loadData"
+            style="width: 320px"
+          />
         </el-form-item>
-        <el-form-item style="float: right">
-          <el-button type="success" icon="Download" @click="handleExport" :loading="exporting">
-            导出Excel报表
-          </el-button>
+        <el-form-item label="部门">
+          <el-select v-model="filterForm.department" placeholder="全部部门" clearable @change="loadData" style="width: 160px">
+            <el-option v-for="d in departmentOptions" :key="d" :label="d" :value="d" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="岗位">
+          <el-select v-model="filterForm.jobId" placeholder="全部岗位" clearable @change="loadData" style="width: 180px">
+            <el-option v-for="j in jobOptions" :key="j.id" :label="j.title" :value="j.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
+          <el-button type="success" icon="Download" @click="showExportDialog">导出Excel</el-button>
         </el-form-item>
       </el-form>
-      <div style="margin-top: 8px; color: #606266; font-size: 13px">
-        当前统计范围：{{ queryRangeText }}
-      </div>
-    </el-card>
-    
-    <!-- 统计卡片 -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #409EFF">{{ summary.totalApplications || 0 }}</div>
-          <div class="stat-label">总简历投递量</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #67C23A">{{ summary.totalInterviews || 0 }}</div>
-          <div class="stat-label">总面试人数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #E6A23C">{{ summary.totalOffers || 0 }}</div>
-          <div class="stat-label">总录用人数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #F56C6C">{{ summary.totalOnboard || 0 }}</div>
-          <div class="stat-label">成功入职人数</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 招聘进度统计 -->
-    <el-card shadow="never" style="margin-top: 16px" header="📊 招聘进度统计（按岗位）">
-      <el-table :data="progressList" border stripe v-loading="loading" style="width: 100%">
-        <el-table-column prop="jobId" label="岗位ID" width="80" align="center" />
-        <el-table-column prop="jobTitle" label="岗位名称" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="department" label="部门" width="120" />
-        <el-table-column prop="headcount" label="招聘人数" width="100" align="center" />
-        <el-table-column prop="applicationCount" label="简历投递量" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag type="primary" effect="plain">{{ row.applicationCount }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="interviewCount" label="面试人数" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="success" effect="plain">{{ row.interviewCount }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="offerCount" label="录用人数" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="warning" effect="plain">{{ row.offerCount }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="onboardCount" label="入职人数" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="danger" effect="plain">{{ row.onboardCount }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="conversionRate" label="转化率" width="100" align="center">
-          <template #default="{ row }">
-            <span :style="{ color: parseFloat(row.conversionRate) > 50 ? '#67C23A' : '#E6A23C', fontWeight: 'bold' }">
-              {{ row.conversionRate }}
-            </span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty v-if="progressList.length === 0 && !loading" description="所选时间范围内暂无招聘进度数据" />
     </el-card>
 
-    <!-- 招聘效果分析 -->
+    <!-- 核心指标卡 -->
     <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="12">
-        <el-card shadow="never" header="📈 招聘效果分析">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="总应聘数">
-              <el-tag type="primary">{{ effectData.totalApplications || 0 }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="通过筛选">
-              {{ effectData.passedScreening || 0 }} 
-              <el-tag size="small" type="success" style="margin-left: 8px">{{ effectData.screeningPassRate }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="面试中">
-              <el-tag type="warning">{{ effectData.interviewing || 0 }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="总面试数">
-              {{ effectData.totalInterviews || 0 }}
-              <el-tag size="small" type="success" style="margin-left: 8px">{{ effectData.interviewPassRate }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="已录用">
-              <el-tag type="success">{{ effectData.hired || 0 }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="已淘汰">
-              <el-tag type="danger">{{ effectData.rejected || 0 }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="总Offer数">
-              {{ effectData.totalOffers || 0 }}
-              <el-tag size="small" type="success" style="margin-left: 8px">{{ effectData.offerAcceptRate }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="成功入职">
-              <el-tag type="success" size="large">{{ effectData.onboarded || 0 }}</el-tag>
-              <el-tag size="small" type="danger" style="margin-left: 8px">整体转化率: {{ effectData.overallConversionRate }}</el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-      </el-col>
-
-      <el-col :span="12">
-        <el-card shadow="never" header="🎯 招聘转化漏斗">
-          <div class="funnel">
-            <div class="funnel-item" style="width: 100%; background: #409EFF">
-              简历投递: {{ effectData.totalApplications || 0 }}
+      <el-col :span="5" v-for="(item, idx) in kpiCards" :key="idx">
+        <el-card shadow="hover" class="kpi-card" :style="{ borderTop: `3px solid ${item.color}` }">
+          <div class="kpi-icon" :style="{ color: item.color }">
+            <el-icon :size="28"><component :is="item.icon" /></el-icon>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value" :style="{ color: item.color }">
+              {{ item.suffix === '%' ? item.value + '%' : item.value }}
             </div>
-            <div class="funnel-item" style="width: 75%; background: #67C23A">
-              通过筛选: {{ effectData.passedScreening || 0 }}
-            </div>
-            <div class="funnel-item" style="width: 55%; background: #E6A23C">
-              参加面试: {{ effectData.totalInterviews || 0 }}
-            </div>
-            <div class="funnel-item" style="width: 35%; background: #F56C6C">
-              发放Offer: {{ effectData.totalOffers || 0 }}
-            </div>
-            <div class="funnel-item" style="width: 20%; background: #909399">
-              成功入职: {{ effectData.onboarded || 0 }}
-            </div>
+            <div class="kpi-label">{{ item.label }}</div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 各岗位分析 -->
-    <el-card shadow="never" style="margin-top: 16px" header="🏢 各岗位招聘效果分析">
-      <el-table :data="jobAnalysisList" border stripe>
-        <el-table-column prop="jobId" label="岗位ID" width="80" align="center" />
-        <el-table-column prop="jobTitle" label="岗位名称" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="department" label="部门" width="120" />
-        <el-table-column prop="applicationCount" label="简历投递量" width="120" align="center" />
-        <el-table-column prop="onboardCount" label="入职人数" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag type="success">{{ row.onboardCount }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="conversionRate" label="转化率" width="100" align="center">
-          <template #default="{ row }">
-            <span :style="{ color: parseFloat(row.conversionRate) > 30 ? '#67C23A' : '#F56C6C', fontWeight: 'bold' }">
-              {{ row.conversionRate }}
-            </span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty v-if="jobAnalysisList.length === 0 && !loading" description="所选时间范围内暂无岗位分析数据" />
-    </el-card>
+    <!-- 图表区第一行 -->
+    <el-row :gutter="16" style="margin-top: 16px">
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">各岗位投递量排行</span></template>
+          <div ref="chartJobRanking" class="chart-container"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">招聘进度漏斗图</span></template>
+          <div ref="chartFunnel" class="chart-container"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">面试状态分布</span></template>
+          <div ref="chartInterview" class="chart-container"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 图表区第二行 -->
+    <el-row :gutter="16" style="margin-top: 16px">
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">投递趋势</span></template>
+          <div ref="chartTrend" class="chart-container"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">各部门招聘进度</span></template>
+          <div ref="chartDept" class="chart-container"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" class="chart-card">
+          <template #header><span class="chart-title">岗位录用率 TOP5</span></template>
+          <div ref="chartTop5" class="chart-container"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 导出配置弹窗 -->
+    <el-dialog v-model="exportDialogVisible" title="导出配置" width="480px">
+      <el-form :model="exportConfig" label-width="100px">
+        <el-form-item label="导出范围">
+          <el-radio-group v-model="exportConfig.scope">
+            <el-radio label="current">当前视图</el-radio>
+            <el-radio label="all">全部数据</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="文件名">
+          <el-input v-model="exportConfig.fileName" placeholder="招聘报表_YYYYMMDD" />
+        </el-form-item>
+        <el-form-item label="导出类型">
+          <el-select v-model="exportConfig.exportType" style="width: 100%">
+            <el-option label="全部数据" value="all" />
+            <el-option label="进度统计" value="dashboard" />
+            <el-option label="效果分析" value="analysis" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="exportDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleExport" :loading="exporting">确认导出</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getRecruitmentProgress, getRecruitmentEffect, exportReportExcel } from '../../api/report'
+import { Document, User, ChatDotSquare, CircleCheck, TrendCharts } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import { getDashboard, exportReportExcel } from '../../api/report'
 
-// 日期格式化辅助函数
-function formatDateValue(date) {
-  const d = new Date(date)
+// refs
+const chartJobRanking = ref(null)
+const chartFunnel = ref(null)
+const chartInterview = ref(null)
+const chartTrend = ref(null)
+const chartDept = ref(null)
+const chartTop5 = ref(null)
+
+let chartInstances = []
+
+const loading = ref(false)
+const exporting = ref(false)
+const exportDialogVisible = ref(false)
+const dateRangeType = ref('all')
+
+const departmentOptions = ref([])
+const jobOptions = ref([])
+
+const filterForm = reactive({
+  dateRange: [],
+  department: '',
+  jobId: null
+})
+
+const exportConfig = reactive({
+  scope: 'current',
+  fileName: '',
+  exportType: 'all'
+})
+
+const dashboardData = ref({})
+
+// KPI 卡片数据
+const kpiCards = computed(() => {
+  const kpi = dashboardData.value.kpi || {}
+  return [
+    { label: '总简历投递量', value: kpi.totalApplications || 0, color: '#409EFF', icon: 'Document', suffix: '' },
+    { label: '待面试人数', value: kpi.pendingInterviews || 0, color: '#E6A23C', icon: 'ChatDotSquare', suffix: '' },
+    { label: '面试通过率', value: kpi.interviewPassRate || '0', color: '#67C23A', icon: 'CircleCheck', suffix: '%' },
+    { label: '已录用人数', value: kpi.totalHired || 0, color: '#F56C6C', icon: 'User', suffix: '' },
+    { label: '招聘完成率', value: kpi.recruitmentCompletionRate || '0', color: '#909399', icon: 'TrendCharts', suffix: '%' }
+  ]
+})
+
+// 格式化日期
+function formatDate(d) {
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-// 快捷日期范围类型
-const dateRangeType = ref('month')
-
-// 当前生效的查询范围文本
-const queryRangeText = computed(() => {
-  if (filterForm.startDate && filterForm.endDate) {
-    return `${filterForm.startDate} 至 ${filterForm.endDate}`
+// 日期范围切换
+function handleDateRangeChange(type) {
+  const now = new Date()
+  if (type === 'all') {
+    filterForm.dateRange = []
+    loadData()
+  } else if (type === 'month') {
+    filterForm.dateRange = [formatDate(new Date(now.getFullYear(), now.getMonth(), 1)), formatDate(now)]
+    loadData()
+  } else if (type === 'quarter') {
+    const qMonth = Math.floor(now.getMonth() / 3) * 3
+    filterForm.dateRange = [formatDate(new Date(now.getFullYear(), qMonth, 1)), formatDate(now)]
+    loadData()
+  } else if (type === 'half') {
+    const halfYearAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+    filterForm.dateRange = [formatDate(halfYearAgo), formatDate(now)]
+    loadData()
   }
-  return '全部时间'
-})
-
-// 筛选表单，默认本月
-const today = new Date()
-const filterForm = reactive({
-  startDate: formatDateValue(new Date(today.getFullYear(), today.getMonth(), 1)),
-  endDate: formatDateValue(today)
-})
-
-const loading = ref(false)
-const exporting = ref(false)
-
-// 数据
-const summary = ref({})
-const progressList = ref([])
-const effectData = ref({})
-const jobAnalysisList = ref([])
+  // custom: wait for date picker
+}
 
 // 加载数据
 async function loadData() {
   loading.value = true
   try {
     const params = {}
-    if (filterForm.startDate) params.startDate = filterForm.startDate
-    if (filterForm.endDate) params.endDate = filterForm.endDate
-
-    console.log('报表请求参数:', params)
-
-    // 并行加载进度统计和效果分析
-    const [progressRes, effectRes] = await Promise.all([
-      getRecruitmentProgress(params),
-      getRecruitmentEffect(params)
-    ])
-
-    console.log('=== 招聘进度数据 ===')
-    console.log('progressRes:', progressRes)
-    console.log('summary:', progressRes.data?.summary)
-    console.log('progressList:', progressRes.data?.progressList)
-    
-    console.log('=== 招聘效果数据 ===')
-    console.log('effectRes:', effectRes)
-    console.log('effectData:', effectRes.data)
-    console.log('jobAnalysis:', effectRes.data?.jobAnalysis)
-
-    if (progressRes.code === 200) {
-      summary.value = progressRes.data.summary || {}
-      progressList.value = progressRes.data.progressList || []
+    if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+      params.startDate = filterForm.dateRange[0]
+      params.endDate = filterForm.dateRange[1]
     }
+    if (filterForm.department) params.department = filterForm.department
+    if (filterForm.jobId) params.jobId = filterForm.jobId
 
-    if (effectRes.code === 200) {
-      effectData.value = effectRes.data || {}
-      jobAnalysisList.value = effectRes.data.jobAnalysis || []
+    const res = await getDashboard(params)
+    if (res.code === 200) {
+      dashboardData.value = res.data || {}
+      // 提取部门和岗位选项
+      const deptSet = new Set()
+      const jobList = []
+      const ranking = dashboardData.value.jobApplicationRanking || []
+      ranking.forEach(item => {
+        if (item.jobTitle) jobList.push({ id: item.jobId, title: item.jobTitle })
+      })
+      const deptProgress = dashboardData.value.departmentProgress || []
+      deptProgress.forEach(item => { if (item.department) deptSet.add(item.department) })
+      departmentOptions.value = [...deptSet]
+      jobOptions.value = jobList
+
+      await nextTick()
+      renderCharts()
     }
   } catch (err) {
-    console.error('报表数据加载失败:', err)
-    ElMessage.error('报表数据加载失败')
+    console.error('仪表盘数据加载失败:', err)
+    ElMessage.error('数据加载失败')
   } finally {
     loading.value = false
   }
 }
 
-// 快捷日期范围切换
-function handleDateRangeChange(type) {
-  console.log('切换时间范围:', type)
-  const now = new Date()
-  if (type === 'week') {
-    const weekAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
-    filterForm.startDate = formatDateValue(weekAgo)
-    filterForm.endDate = formatDateValue(now)
-  } else if (type === 'month') {
-    filterForm.startDate = formatDateValue(new Date(now.getFullYear(), now.getMonth(), 1))
-    filterForm.endDate = formatDateValue(now)
-  } else if (type === 'year') {
-    const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
-    filterForm.startDate = formatDateValue(yearAgo)
-    filterForm.endDate = formatDateValue(now)
-  } else if (type === 'all') {
-    filterForm.startDate = ''
-    filterForm.endDate = ''
-  }
-  loadData()
+// 渲染所有图表
+function renderCharts() {
+  destroyCharts()
+  renderJobRanking()
+  renderFunnel()
+  renderInterviewDistribution()
+  renderTrend()
+  renderDeptProgress()
+  renderTop5()
 }
 
-// 重置筛选
-function resetFilter() {
-  dateRangeType.value = 'month'
-  const now = new Date()
-  filterForm.startDate = formatDateValue(new Date(now.getFullYear(), now.getMonth(), 1))
-  filterForm.endDate = formatDateValue(now)
-  loadData()
+function destroyCharts() {
+  chartInstances.forEach(c => c && c.dispose())
+  chartInstances = []
 }
 
-// 导出Excel
+function initChart(elRef) {
+  if (!elRef) return null
+  const instance = echarts.init(elRef)
+  chartInstances.push(instance)
+  return instance
+}
+
+// 图表1：各岗位投递量排行（横向柱状图）
+function renderJobRanking() {
+  const chart = initChart(chartJobRanking.value)
+  if (!chart) return
+  const data = dashboardData.value.jobApplicationRanking || []
+  const names = data.map(d => d.jobTitle).reverse()
+  const values = data.map(d => d.applicationCount).reverse()
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '30%', right: '10%', bottom: '10%', top: '10%' },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: names, axisLabel: { width: 80, overflow: 'truncate' } },
+    series: [{ type: 'bar', data: values, itemStyle: { color: '#409EFF', borderRadius: [0, 4, 4, 0] } }]
+  })
+}
+
+// 图表2：招聘漏斗图
+function renderFunnel() {
+  const chart = initChart(chartFunnel.value)
+  if (!chart) return
+  const data = dashboardData.value.funnel || []
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+    series: [{
+      type: 'funnel',
+      left: '10%', right: '10%', top: '5%', bottom: '5%',
+      minSize: '20%', maxSize: '100%',
+      gap: 4,
+      label: { show: true, position: 'inside', formatter: '{b}\n{c}人' },
+      itemStyle: { borderWidth: 0 },
+      data: data.map((d, i) => ({
+        name: d.stage, value: d.count,
+        itemStyle: { color: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i] || '#409EFF' }
+      }))
+    }]
+  })
+}
+
+// 图表3：面试状态分布（环形图）
+function renderInterviewDistribution() {
+  const chart = initChart(chartInterview.value)
+  if (!chart) return
+  const data = dashboardData.value.interviewStatusDistribution || []
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0, type: 'scroll' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      label: { show: true, formatter: '{b}\n{d}%' },
+      data: data.map((d, i) => ({
+        ...d,
+        itemStyle: { color: ['#E6A23C', '#67C23A', '#409EFF', '#F56C6C'][i] }
+      }))
+    }]
+  })
+}
+
+// 图表4：投递趋势（折线图）
+function renderTrend() {
+  const chart = initChart(chartTrend.value)
+  if (!chart) return
+  const data = dashboardData.value.applicationTrend || []
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '10%', right: '5%', bottom: '15%', top: '10%' },
+    xAxis: { type: 'category', data: data.map(d => d.date), axisLabel: { rotate: 45, fontSize: 10 } },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [{
+      type: 'line', smooth: true, data: data.map(d => d.count),
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: 'rgba(64,158,255,0.4)' },
+        { offset: 1, color: 'rgba(64,158,255,0.05)' }
+      ])},
+      lineStyle: { color: '#409EFF', width: 2 },
+      itemStyle: { color: '#409EFF' }
+    }]
+  })
+}
+
+// 图表5：各部门招聘进度（堆叠条形图）
+function renderDeptProgress() {
+  const chart = initChart(chartDept.value)
+  if (!chart) return
+  const data = dashboardData.value.departmentProgress || []
+  const depts = data.map(d => d.department)
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { bottom: 0, data: ['投递', '面试', '录用', '入职'] },
+    grid: { left: '15%', right: '5%', bottom: '15%', top: '10%' },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: depts, axisLabel: { width: 60, overflow: 'truncate' } },
+    series: [
+      { name: '投递', type: 'bar', stack: 'total', data: data.map(d => d.applicationCount), itemStyle: { color: '#409EFF' } },
+      { name: '面试', type: 'bar', stack: 'total', data: data.map(d => d.interviewCount), itemStyle: { color: '#E6A23C' } },
+      { name: '录用', type: 'bar', stack: 'total', data: data.map(d => d.offerCount), itemStyle: { color: '#67C23A' } },
+      { name: '入职', type: 'bar', stack: 'total', data: data.map(d => d.onboardCount), itemStyle: { color: '#F56C6C' } }
+    ]
+  })
+}
+
+// 图表6：岗位录用率TOP5
+function renderTop5() {
+  const chart = initChart(chartTop5.value)
+  if (!chart) return
+  const data = dashboardData.value.topHireRateJobs || []
+  const names = data.map(d => d.jobTitle).reverse()
+  const rates = data.map(d => d.hireRate).reverse()
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>录用率: {c}%' },
+    grid: { left: '30%', right: '10%', bottom: '10%', top: '10%' },
+    xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+    yAxis: { type: 'category', data: names, axisLabel: { width: 80, overflow: 'truncate' } },
+    series: [{
+      type: 'bar', data: rates,
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#67C23A' }, { offset: 1, color: '#409EFF' }
+        ]),
+        borderRadius: [0, 4, 4, 0]
+      },
+      label: { show: true, position: 'right', formatter: '{c}%' }
+    }]
+  })
+}
+
+// 导出弹窗
+function showExportDialog() {
+  const now = new Date()
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
+  exportConfig.fileName = `招聘报表_${dateStr}`
+  exportDialogVisible.value = true
+}
+
 async function handleExport() {
   exporting.value = true
   try {
-    const params = {}
-    if (filterForm.startDate) params.startDate = filterForm.startDate
-    if (filterForm.endDate) params.endDate = filterForm.endDate
-
+    const params = { exportType: exportConfig.exportType }
+    if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+      params.startDate = filterForm.dateRange[0]
+      params.endDate = filterForm.dateRange[1]
+    }
     const res = await exportReportExcel(params)
-    
-    // 创建下载链接
-    const blob = new Blob([res.data], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    })
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    
-    // 生成文件名
-    const now = new Date()
-    const dateStr = now.toISOString().slice(0, 10)
-    link.download = `招聘统计报表_${dateStr}.xlsx`
-    
+    link.download = `${exportConfig.fileName || '招聘报表'}.xlsx`
     link.click()
     window.URL.revokeObjectURL(url)
+    exportDialogVisible.value = false
     ElMessage.success('导出成功')
   } catch (err) {
     console.error('导出失败:', err)
@@ -343,61 +433,45 @@ async function handleExport() {
   }
 }
 
+// 窗口resize
+function handleResize() {
+  chartInstances.forEach(c => c && c.resize())
+}
+
 onMounted(() => {
+  // 初始化默认全部
+  filterForm.dateRange = []
   loadData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  destroyCharts()
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style scoped>
-.report-page {
-  padding: 20px;
-}
-
-.filter-card {
-  margin-bottom: 16px;
-}
-
-.stat-card {
+.report-dashboard { padding: 20px; }
+.filter-card { margin-bottom: 0; }
+.kpi-card {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
+  padding: 8px 0;
 }
-
-.stat-card:hover {
-  transform: translateY(-4px);
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: bold;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 8px;
-}
-
-.funnel {
+.kpi-card:hover { transform: translateY(-4px); }
+.kpi-card :deep(.el-card__body) {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 20px 0;
+  gap: 16px;
+  padding: 16px 20px;
 }
-
-.funnel-item {
-  color: #fff;
-  padding: 12px;
-  text-align: center;
-  border-radius: 4px;
-  font-weight: bold;
-  transition: all 0.3s;
-  cursor: pointer;
-}
-
-.funnel-item:hover {
-  opacity: 0.8;
-  transform: scale(1.02);
-}
+.kpi-icon { flex-shrink: 0; }
+.kpi-content { flex: 1; text-align: left; }
+.kpi-value { font-size: 28px; font-weight: bold; line-height: 1.2; }
+.kpi-label { font-size: 13px; color: #909399; margin-top: 4px; }
+.chart-card { height: 100%; }
+.chart-title { font-size: 15px; font-weight: 600; color: #303133; }
+.chart-container { height: 300px; width: 100%; }
 </style>

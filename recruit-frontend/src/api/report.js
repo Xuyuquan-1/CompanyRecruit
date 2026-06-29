@@ -1,6 +1,24 @@
 import request from '../utils/request'
 
-// 招聘进度统计
+// 仪表盘数据（招聘进度统计）
+export function getDashboard(params) {
+  return request({ 
+    url: '/api/report/dashboard', 
+    method: 'get',
+    params 
+  })
+}
+
+// 招聘效果分析（多维度）
+export function getAnalysis(params) {
+  return request({ 
+    url: '/api/report/analysis', 
+    method: 'get',
+    params 
+  })
+}
+
+// 招聘进度统计（旧接口兼容）
 export function getRecruitmentProgress(params) {
   return request({ 
     url: '/api/report/progress', 
@@ -9,7 +27,7 @@ export function getRecruitmentProgress(params) {
   })
 }
 
-// 招聘效果分析
+// 招聘效果分析（旧接口兼容）
 export function getRecruitmentEffect(params) {
   return request({ 
     url: '/api/report/effect', 

@@ -112,13 +112,25 @@ const protectedRoutes = [
     path: '/report',
     component: Layout,
     redirect: '/report/dashboard',
-    meta: { title: '统计分析', icon: 'DataAnalysis' },
+    meta: { title: '报表中心', icon: 'DataAnalysis' },
     children: [
       {
         path: 'dashboard',
         name: 'ReportDashboard',
         component: () => import('../views/report/index.vue'),
-        meta: { title: '招聘报表', icon: 'PieChart', permission: 'report:list' }
+        meta: { title: '招聘进度统计', icon: 'PieChart', permission: 'report:list' }
+      },
+      {
+        path: 'analysis',
+        name: 'ReportAnalysis',
+        component: () => import('../views/report/analysis.vue'),
+        meta: { title: '招聘效果分析', icon: 'TrendCharts', permission: 'report:list' }
+      },
+      {
+        path: 'export',
+        name: 'ReportExport',
+        component: () => import('../views/report/export.vue'),
+        meta: { title: '报表导出', icon: 'Download', permission: 'report:export' }
       }
     ]
   },
