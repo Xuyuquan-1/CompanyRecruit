@@ -125,12 +125,6 @@ const protectedRoutes = [
         name: 'ReportAnalysis',
         component: () => import('../views/report/analysis.vue'),
         meta: { title: '招聘效果分析', icon: 'TrendCharts', permission: 'report:list' }
-      },
-      {
-        path: 'export',
-        name: 'ReportExport',
-        component: () => import('../views/report/export.vue'),
-        meta: { title: '报表导出', icon: 'Download', permission: 'report:export' }
       }
     ]
   },
