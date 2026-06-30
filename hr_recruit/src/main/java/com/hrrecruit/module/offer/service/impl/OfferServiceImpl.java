@@ -1,7 +1,6 @@
 package com.hrrecruit.module.offer.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrrecruit.common.Constants;
 import com.hrrecruit.common.PageResult;
@@ -199,25 +198,28 @@ public class OfferServiceImpl implements OfferService {
         Application application = applicationMapper.selectById(offer.getApplicationId());
         if (application != null) {
             application.setStatus(Constants.APP_STATUS_ONBOARDED);
+            application.setResult(1);
             application.setRemark("入职确认完成，已生成员工档案");
             applicationMapper.updateById(application);
+        }
 
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode docsNode = mapper.readTree(offer.getDocsSubmitted());
-                Employee employee = new Employee();
-                employee.setName(application.getCandidateName());
-                employee.setPosition(application.getJobTitle());
-                employee.setOfferId(offer.getId());
-                employee.setExpectedJoinDate(joinDate);
-                employee.setStatus(1);
-                employee.setCreateTime(LocalDateTime.now());
-                employee.setUpdateTime(LocalDateTime.now());
-                employeeMapper.insert(employee);
-            } catch (Exception e) {
-                log.error("创建员工档案失败", e);
-                throw new BusinessException("创建员工档案失败");
-            }
+        try {
+            SysUser user = userMapper.selectById(application.getCandidateId());
+            JobPost jobPost = jobPostMapper.selectById(application.getJobId());
+            Employee employee = new Employee();
+            employee.setName(user != null ? user.getRealName() : "");
+            employee.setPhone(user != null ? user.getPhone() : null);
+            employee.setDepartment(jobPost != null ? jobPost.getDepartment() : "");
+            employee.setPosition(jobPost != null ? jobPost.getTitle() : "");
+            employee.setOfferId(offer.getId());
+            employee.setExpectedJoinDate(joinDate);
+            employee.setActualJoinDate(joinDate);
+            employee.setStatus(Constants.EMPLOYEE_STATUS_ACTIVE);
+            employee.setCreateTime(LocalDateTime.now());
+            employee.setUpdateTime(LocalDateTime.now());
+            employeeMapper.insert(employee);
+        } catch (Exception e) {
+            log.error("创建员工记录失败", e);
         }
     }
 
@@ -237,19 +239,22 @@ public class OfferServiceImpl implements OfferService {
         Application application = applicationMapper.selectById(offer.getApplicationId());
         if (application != null) {
             application.setStatus(Constants.APP_STATUS_ONBOARDED);
+            application.setResult(1);
             application.setRemark("入职资料审核通过，已办理入职");
             applicationMapper.updateById(application);
         }
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode docsNode = mapper.readTree(offer.getDocsSubmitted());
+            SysUser user = userMapper.selectById(application.getCandidateId());
+            JobPost jobPost = jobPostMapper.selectById(application.getJobId());
             Employee employee = new Employee();
-            employee.setName(docsNode.has("name") ? docsNode.get("name").asText() : application.getCandidateName());
-            employee.setPosition(docsNode.has("jobTitle") ? docsNode.get("jobTitle").asText() : "");
+            employee.setName(user != null ? user.getRealName() : "");
+            employee.setPhone(user != null ? user.getPhone() : null);
+            employee.setDepartment(jobPost != null ? jobPost.getDepartment() : "");
+            employee.setPosition(jobPost != null ? jobPost.getTitle() : "");
             employee.setOfferId(offer.getId());
-            employee.setStatus(1);
             employee.setExpectedJoinDate(offer.getExpectedJoinDate());
+            employee.setStatus(Constants.EMPLOYEE_STATUS_ACTIVE);
             employee.setCreateTime(LocalDateTime.now());
             employee.setUpdateTime(LocalDateTime.now());
             employeeMapper.insert(employee);

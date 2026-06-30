@@ -1,5 +1,6 @@
 package com.hrrecruit.module.application.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hrrecruit.common.Constants;
 import com.hrrecruit.common.PageResult;
@@ -106,14 +107,17 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     public void updateRemark(Long id, String tags, String remark) {
-        Application application = getById(id);
+        LambdaUpdateWrapper<Application> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Application::getId, id);
         if (StringUtils.hasText(tags)) {
-            application.setTags(tags);
+            wrapper.set(Application::getTags, tags);
         }
         if (StringUtils.hasText(remark)) {
-            application.setRemark(remark);
+            wrapper.set(Application::getRemark, remark);
         }
-        applicationMapper.updateById(application);
+        if (StringUtils.hasText(tags) || StringUtils.hasText(remark)) {
+            applicationMapper.update(null, wrapper);
+        }
     }
 
     @Override
