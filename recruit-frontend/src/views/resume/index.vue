@@ -261,7 +261,7 @@ function handleView(row) {
 }
 
 // 修正
-const editVisible = ref(false), editId = ref(null)
+const editVisible = ref(false), editId = ref(null), editFormRef = ref(null)
 const editForm = reactive({
   name: '', phone: '', email: '', education: '',
   school: '', major: '', graduationYear: '',
