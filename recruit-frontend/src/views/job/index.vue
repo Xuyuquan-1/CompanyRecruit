@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="job-manage">
     <!-- ========== 搜索区域 ========== -->
     <el-card shadow="never" class="search-card">
@@ -65,19 +65,33 @@
         <el-table-column label="操作" width="320" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
-              v-if="userStore.hasPermission('job:edit')"
+              v-if="userStore.hasPermission('job:edit') && row.status === 0"
               type="primary"
               link
               icon="Edit"
               @click="handleEdit(row)"
             >编辑</el-button>
+            <el-tooltip
+              v-if="userStore.hasPermission('job:edit') && row.status !== 0"
+              content="已发布岗位不可直接修改"
+              placement="top"
+            >
+              <el-button type="primary" link icon="Edit" disabled>编辑</el-button>
+            </el-tooltip>
             <el-button
-              v-if="userStore.hasPermission('job:edit') && row.status === 0"
+              v-if="userStore.hasPermission('job:edit') && row.status !== 1"
               type="success"
               link
               icon="Promotion"
               @click="handlePublish(row)"
             >发布</el-button>
+            <el-tooltip
+              v-if="userStore.hasPermission('job:edit') && row.status === 1"
+              content="已发布岗位不可重复发布"
+              placement="top"
+            >
+              <el-button type="success" link icon="Promotion" disabled>发布</el-button>
+            </el-tooltip>
             <el-button
               v-if="userStore.hasPermission('job:edit') && row.status === 1"
               type="warning"
@@ -85,15 +99,32 @@
               icon="CloseBold"
               @click="handleClose(row)"
             >关闭</el-button>
+            <el-tooltip
+              v-if="userStore.hasPermission('job:edit') && row.status !== 1"
+              content="仅已发布岗位可关闭"
+              placement="top"
+            >
+              <el-button type="warning" link icon="CloseBold" disabled>关闭</el-button>
+            </el-tooltip>
             <el-button
-              v-if="userStore.hasPermission('job:delete')"
+              v-if="userStore.hasPermission('job:delete') && row.status !== 1"
               type="danger"
               link
               icon="Delete"
               @click="handleDelete(row)"
             >删除</el-button>
+            <el-tooltip
+              v-if="userStore.hasPermission('job:delete') && row.status === 1"
+              content="已发布岗位不可删除，请先关闭后再删除"
+              placement="top"
+            >
+              <el-button type="danger" link icon="Delete" disabled>删除</el-button>
+            </el-tooltip>
           </template>
         </el-table-column>
+        <template #empty>
+          <span>暂无符合条件的岗位</span>
+        </template>
       </el-table>
 
       <!-- 分页组件 -->
@@ -237,6 +268,7 @@ const formData = reactive({
 const formRules = {
   title: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
   department: [{ required: true, message: '请选择部门', trigger: 'change' }],
+  description: [{ required: true, message: '请输入岗位职责', trigger: 'blur' }],
   headcount: [{ required: true, message: '请输入招聘人数', trigger: 'blur' }]
 }
 
@@ -249,6 +281,10 @@ function handleAdd() {
 
 /** 打开编辑对话框 */
 function handleEdit(row) {
+  if (row.status !== 0) {
+    ElMessage.warning('已发布岗位不可直接修改')
+    return
+  }
   dialogTitle.value = '编辑岗位'
   editId.value = row.id
   // 把当前行数据填入表单
@@ -301,6 +337,10 @@ function resetForm() {
 
 /** 发布岗位 */
 async function handlePublish(row) {
+  if (!row.description || !row.title || !row.department || !row.headcount) {
+    ElMessage.warning('岗位信息不完整，请先完善后再发布');
+    return
+  }
   try {
     await ElMessageBox.confirm(`确定要发布岗位【${row.title}】吗？`, '提示', {
       type: 'warning'
@@ -315,6 +355,10 @@ async function handlePublish(row) {
 
 /** 关闭岗位 */
 async function handleClose(row) {
+  if (row.status !== 1) {
+    ElMessage.warning('仅已发布岗位可关闭');
+    return
+  }
   try {
     await ElMessageBox.confirm(`确定要关闭岗位【${row.title}】吗？`, '提示', {
       type: 'warning'
@@ -327,6 +371,10 @@ async function handleClose(row) {
 
 /** 删除岗位 */
 async function handleDelete(row) {
+  if (row.status === 1) {
+    ElMessage.warning('已发布岗位不可删除，请先关闭后再删除')
+    return
+  }
   try {
     await ElMessageBox.confirm(`确定要删除岗位【${row.title}】吗？此操作不可恢复！`, '警告', {
       type: 'warning',

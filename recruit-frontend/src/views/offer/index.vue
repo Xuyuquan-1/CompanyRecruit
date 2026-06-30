@@ -51,6 +51,7 @@
             <template v-if="!userStore.isCandidate()">
               <el-button v-if="row.status===1" type="primary" link icon="View" @click="viewDocuments(row)">查看资料</el-button>
               <el-button v-if="row.status===1" type="success" link icon="Check" @click="handleOnboard(row)">确认入职</el-button>
+              <el-button v-if="row.status===1" type="danger" link icon="Close" @click="handleMaterialReject(row)">材料不通过</el-button>
               <el-button v-if="row.status===0" type="danger" link icon="Close" @click="handleReject(row)">拒绝</el-button>
             </template>
             <!-- 应聘者操作 -->
@@ -344,6 +345,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { getOfferPage, confirmOnboard, rejectOffer, sendOffer, acceptOffer, submitDocuments } from '../../api/offer'
+import { rejectApplication } from '../../api/application'
 import { uploadFile, getDownloadUrl } from '../../api/oss'
 import { useUserStore } from '../../store/user'
 
@@ -421,6 +423,17 @@ async function handleReject(row) {
     await rejectOffer(row.id, '')
     ElMessage.success('已拒绝录用')
     loadData()
+  } catch {}
+}
+
+// 材料不通过
+async function handleMaterialReject(row) {
+  try {
+    await ElMessageBox.confirm('确认材料不通过，将该应聘者标记为不录用？', '提示', { type: 'warning' })
+    await rejectApplication(row.applicationId, 4)
+    ElMessage.success('已标记为材料不通过')
+    // 后端只更新了应聘状态，录用状态未联动，前端本地更新为已拒绝
+    row.status = 2
   } catch {}
 }
 

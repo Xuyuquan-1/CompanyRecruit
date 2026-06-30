@@ -151,6 +151,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional
     public void updateDocuments(Long id, String documentType, Integer status) {
         Employee employee = getById(id);
         switch (documentType) {
@@ -167,6 +168,25 @@ public class EmployeeServiceImpl implements EmployeeService {
                 throw new BusinessException("未知的资料类型: " + documentType);
         }
         employeeMapper.updateById(employee);
+        
+        if (status != null && status == 0) {
+            Offer offer = offerMapper.selectById(employee.getOfferId());
+            if (offer != null && offer.getStatus() != Constants.OFFER_STATUS_REJECTED 
+                && offer.getStatus() != Constants.OFFER_STATUS_ONBOARDED) {
+                offer.setStatus(Constants.OFFER_STATUS_REJECTED);
+                offer.setRemark("入职资料审核不通过（" + documentType + "），已拒绝");
+                offerMapper.updateById(offer);
+                
+                Application application = applicationMapper.selectById(offer.getApplicationId());
+                if (application != null) {
+                    application.setStatus(Constants.APP_STATUS_REJECTED);
+                    application.setResult(2);
+                    application.setRefuseType(Constants.REFUSE_TYPE_APPROVAL);
+                    application.setRemark("入职资料审核不通过（" + documentType + "），审批拒绝");
+                    applicationMapper.updateById(application);
+                }
+            }
+        }
     }
 
     @Override

@@ -53,8 +53,8 @@ public class InterviewController {
     @PostMapping
     @PreAuthorize("hasAuthority('interview:list')")
     public Result<Void> arrange(@Valid @RequestBody InterviewDTO dto) {
-        interviewService.arrange(dto);
-        return Result.successMsg("面试安排成功");
+        String msg = interviewService.arrange(dto);
+        return Result.successMsg(msg);
     }
 
     /**

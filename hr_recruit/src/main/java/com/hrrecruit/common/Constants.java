@@ -37,8 +37,6 @@ public final class Constants {
     public static final int APP_STATUS_OFFER_ACCEPTED   = 5;
     /** 应聘状态：已入职（最终终态） */
     public static final int APP_STATUS_ONBOARDED        = 6;
-    /** 应聘状态：候选人撤回 */
-    public static final int APP_STATUS_WITHDRAWN        = 7;
 
     // ============ 失败原因类型 ============
     /** 失败原因：简历淘汰 */
@@ -47,14 +45,10 @@ public final class Constants {
     public static final int REFUSE_TYPE_INTERVIEW       = 2;
     /** 失败原因：候选人拒Offer */
     public static final int REFUSE_TYPE_CANDIDATE_REFUSE = 3;
-    /** 失败原因：材料不合格 */
-    public static final int REFUSE_TYPE_MATERIAL        = 4;
-    /** 失败原因：录用审批驳回 */
-    public static final int REFUSE_TYPE_APPROVAL        = 5;
-    /** 失败原因：候选人主动撤回 */
-    public static final int REFUSE_TYPE_WITHDRAW        = 6;
+    /** 失败原因：审批不通过 */
+    public static final int REFUSE_TYPE_APPROVAL        = 4;
     /** 失败原因：岗位关闭终止 */
-    public static final int REFUSE_TYPE_JOB_CLOSED      = 7;
+    public static final int REFUSE_TYPE_JOB_CLOSED      = 5;
 
     // ============ 面试状态 ============
     /** 面试状态：待面试 */
@@ -81,6 +75,8 @@ public final class Constants {
     public static final int RESUME_PARSE_SUCCESS  = 1;
     /** 解析状态：解析失败 */
     public static final int RESUME_PARSE_FAILED   = 2;
+    /** 解析状态：解析失败，字段缺失 */
+    public static final int RESUME_PARSE_MISSING_FIELD = 3;
 
     // ============ 菜单类型 ============
     /** 菜单类型：目录 */

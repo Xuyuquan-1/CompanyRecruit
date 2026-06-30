@@ -6,9 +6,11 @@ import com.hrrecruit.common.PageResult;
 import com.hrrecruit.common.exception.BusinessException;
 import com.hrrecruit.entity.Application;
 import com.hrrecruit.entity.JobPost;
+import com.hrrecruit.entity.Offer;
 import com.hrrecruit.entity.Resume;
 import com.hrrecruit.mapper.ApplicationMapper;
 import com.hrrecruit.mapper.JobPostMapper;
+import com.hrrecruit.mapper.OfferMapper;
 import com.hrrecruit.mapper.ResumeMapper;
 import com.hrrecruit.module.application.dto.ApplicationQueryDTO;
 import com.hrrecruit.module.application.service.ApplicationService;
@@ -28,6 +30,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationMapper applicationMapper;
     private final JobPostMapper jobPostMapper;
+    private final OfferMapper offerMapper;
     private final ResumeMapper resumeMapper;
 
     @Override
@@ -60,10 +63,12 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new BusinessException("只有待筛选状态的应聘记录才能通过");
         }
         application.setStatus(Constants.APP_STATUS_PASSED);
+        application.setRemark("通过筛选，进入面试流程");
         applicationMapper.updateById(application);
     }
 
     @Override
+    @Transactional
     public void reject(Long id, Integer refuseType) {
         Application application = getById(id);
         
@@ -81,7 +86,22 @@ public class ApplicationServiceImpl implements ApplicationService {
         application.setStatus(Constants.APP_STATUS_REJECTED);
         application.setResult(2); // 应聘失败
         application.setRefuseType(refuseType);
+        application.setRemark(getRefuseTypeRemark(refuseType));
         applicationMapper.updateById(application);
+        
+        // 如果拒绝原因是审批不通过，同步更新关联的Offer状态为已拒绝
+        if (refuseType == Constants.REFUSE_TYPE_APPROVAL) {
+            Offer offer = offerMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Offer>()
+                    .eq(Offer::getApplicationId, id)
+            );
+            if (offer != null && offer.getStatus() != Constants.OFFER_STATUS_REJECTED 
+                && offer.getStatus() != Constants.OFFER_STATUS_ONBOARDED) {
+                offer.setStatus(Constants.OFFER_STATUS_REJECTED);
+                offer.setRemark(getRefuseTypeRemark(refuseType));
+                offerMapper.updateById(offer);
+            }
+        }
     }
 
     @Override
@@ -131,7 +151,19 @@ public class ApplicationServiceImpl implements ApplicationService {
         application.setCandidateId(candidateId);
         application.setStatus(Constants.APP_STATUS_PENDING);
         application.setApplyTime(LocalDateTime.now());
-        
+        application.setRemark("投递应聘申请");
         applicationMapper.insert(application);
     }
+    private String getRefuseTypeRemark(Integer refuseType) {
+        switch (refuseType) {
+            case Constants.REFUSE_TYPE_RESUME: return "简历筛选不通过，不录用";
+            case Constants.REFUSE_TYPE_INTERVIEW: return "面试不通过，不录用";
+            case Constants.REFUSE_TYPE_CANDIDATE_REFUSE: return "候选人拒绝Offer，不录用";
+            case Constants.REFUSE_TYPE_APPROVAL: return "审批不通过，不录用";
+            case Constants.REFUSE_TYPE_JOB_CLOSED: return "岗位关闭，招聘终止";
+            default: return "不录用";
+        }
+    }
+
+
 }

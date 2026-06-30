@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="application-manage">
     <el-card shadow="never" class="search-card">
       <el-form inline>
@@ -14,7 +14,6 @@
             <el-option label="不录用" :value="4" />
             <el-option label="已接受Offer(待入职)" :value="5" />
             <el-option label="已入职" :value="6" />
-            <el-option label="候选人撤回" :value="7" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -38,7 +37,7 @@
         <el-table-column prop="applyTime" label="投递时间" width="160">
           <template #default="{ row }">{{ formatDate(row.applyTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" width="300" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handleView(row)">查看</el-button>
             <!-- 只有招聘者/管理员才能看到审核按钮 -->
@@ -46,7 +45,7 @@
               <el-button v-if="row.status===0" type="success" link icon="Select" @click="handlePass(row)">通过</el-button>
               <el-button v-if="row.status===0" type="danger" link icon="CloseBold" @click="handleReject(row)">不通过</el-button>
               <el-button v-if="row.status===1" type="primary" link icon="ChatDotSquare" @click="openArrange(row)">安排面试</el-button>
-            </template>
+              </template>
           </template>
         </el-table-column>
       </el-table>
@@ -99,7 +98,8 @@
         <el-button type="primary" @click="submitArrange">确定安排</el-button>
       </template>
     </el-dialog>
-  </div>
+
+    </div>
 </template>
 
 <script setup>
@@ -107,6 +107,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getApplicationPage, passApplication, rejectApplication, updateApplicationRemark } from '../../api/application'
 import { arrangeInterview } from '../../api/interview'
+
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
@@ -127,12 +128,12 @@ async function handleReject(row) {
   // 选择失败原因
   try {
     const { value: refuseType } = await ElMessageBox.prompt(
-      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-材料不合格 5-录用审批驳回 6-候选人主动撤回 7-岗位关闭终止',
+      '请选择失败原因：1-简历淘汰 2-面试淘汰 3-候选人拒Offer 4-审批不通过 5-岗位关闭终止',
       '不录用原因',
       {
-        inputPlaceholder: '输入原因编号（1-7）',
-        inputPattern: /^[1-7]$/,
-        inputErrorMessage: '请输入1-7之间的数字'
+        inputPlaceholder: '输入原因编号（1-5）',
+        inputPattern: /^[1-5]$/,
+        inputErrorMessage: '请输入1-5之间的数字'
       }
     )
     await rejectApplication(row.id, parseInt(refuseType))
@@ -160,15 +161,15 @@ function openArrange(row) {
   arrangeVisible.value = true
 }
 async function submitArrange() {
-  if (!arrangeForm.interviewTime) { ElMessage.warning('请选择面试时间'); return }
+  if (!arrangeForm.interviewTime) { ElMessage.warning('请填写完整'); return }
   try {
-    await arrangeInterview({
+    const res = await arrangeInterview({
       applicationId: arrangeTarget.value.id,
       interviewTime: arrangeForm.interviewTime,
       location: arrangeForm.location,
       interviewerName: arrangeForm.interviewerName
     })
-    ElMessage.success('面试安排成功')
+    ElMessage.success(res.message || '面试安排成功')
     arrangeVisible.value = false
     loadData()
   } catch {}
@@ -199,7 +200,7 @@ async function submitOffer() {
 
 function formatDate(d) { return d ? d.replace('T', ' ').substring(0, 16) : '' }
 function statusType(s) { 
-  const map = {0:'info',1:'warning',2:'',3:'primary',4:'danger',5:'success',6:'success',7:'info'}
+  const map = {0:'info',1:'warning',2:'',3:'primary',4:'danger',5:'success',6:'success'}
   return map[s]||'info' 
 }
 function statusLabel(s) { 
@@ -210,8 +211,7 @@ function statusLabel(s) {
     3:'待确认Offer',
     4:'不录用',
     5:'已接受Offer(待入职)',
-    6:'已入职',
-    7:'候选人撤回'
+    6:'已入职'
   }
   return map[s]||'未知' 
 }
