@@ -29,14 +29,15 @@ CREATE TABLE IF NOT EXISTS `ai_chat_history` (
                                                  PRIMARY KEY (`id`),
                                                  KEY `idx_chat_user` (`user_id`),
                                                  CONSTRAINT `fk_chat_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话历史表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话历史表';
 
--- 正在导出表  recruitment_db.ai_chat_history 的数据：~3 rows (大约)
+-- 正在导出表  recruitment_db.ai_chat_history 的数据：~4 rows (大约)
 DELETE FROM `ai_chat_history`;
 INSERT INTO `ai_chat_history` (`id`, `user_id`, `question`, `answer`, `create_time`) VALUES
                                                                                          (1, 2, '如何发布一个新岗位？', '请进入岗位管理页面，点击"新增岗位"按钮，填写岗位名称、部门、职责和要求等信息后保存，状态为"草稿"。确认无误后可点击"发布"。', '2026-06-09 09:00:00'),
                                                                                          (2, 2, '我需要筛选Java开发的简历', '已在简历管理模块为您打开筛选功能，您可以在搜索栏输入"Java"或选择标签"Java"进行快速筛选。', '2026-06-09 09:01:00'),
-                                                                                         (3, 3, '面试评价怎么写？', '您可以在面试记录中点击“填写评价”，系统会根据您输入的关键词自动生成规范的评价报告。', '2026-06-09 09:30:00');
+                                                                                         (3, 3, '面试评价怎么写？', '您可以在面试记录中点击“填写评价”，系统会根据您输入的关键词自动生成规范的评价报告。', '2026-06-09 09:30:00'),
+                                                                                         (4, 1, '你好', '你好！欢迎使用人力资源招聘管理系统，有什么需要帮助的吗？请告诉我你想了解的具体操作流程。', '2026-06-29 09:38:45');
 
 -- 导出  表 recruitment_db.application 结构
 CREATE TABLE IF NOT EXISTS `application` (
@@ -65,39 +66,18 @@ CREATE TABLE IF NOT EXISTS `application` (
                                              CONSTRAINT `fk_app_candidate` FOREIGN KEY (`candidate_id`) REFERENCES `sys_user` (`id`),
                                              CONSTRAINT `fk_app_job` FOREIGN KEY (`job_id`) REFERENCES `job_post` (`id`),
                                              CONSTRAINT `fk_app_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应聘记录表';
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应聘记录表';
 
--- 正在导出表  recruitment_db.application 的数据：~28 rows (大约)
+-- 正在导出表  recruitment_db.application 的数据：~0 rows (大约)
 DELETE FROM `application`;
 INSERT INTO `application` (`id`, `job_id`, `resume_id`, `candidate_id`, `status`, `result`, `refuse_type`, `tags`, `remark`, `match_score`, `apply_time`, `update_time`, `deleted`) VALUES
-                                                                                                                                                                                        (1, 1, 13, 6, 6, 1, NULL, '官网投递', NULL, 92.00, '2026-01-10 09:30:00', '2026-01-10 09:30:00', 0),
-                                                                                                                                                                                        (2, 3, 14, 6, 4, 2, 1, '官网投递', NULL, 75.00, '2026-01-15 14:20:00', '2026-01-15 14:20:00', 0),
-                                                                                                                                                                                        (3, 1, 15, 4, 4, 2, 2, '招聘网站', NULL, 88.00, '2026-02-05 10:00:00', '2026-02-05 10:00:00', 0),
-                                                                                                                                                                                        (4, 2, 16, 4, 6, 1, NULL, '招聘网站', NULL, 85.00, '2026-02-12 11:30:00', '2026-02-12 11:30:00', 0),
-                                                                                                                                                                                        (5, 6, 13, 6, 4, 2, 2, '官网投递', NULL, 70.00, '2026-02-20 09:15:00', '2026-02-20 09:15:00', 0),
-                                                                                                                                                                                        (6, 3, 17, 5, 4, 2, 1, '校招', NULL, 65.00, '2026-03-01 08:45:00', '2026-03-01 08:45:00', 0),
-                                                                                                                                                                                        (7, 1, 18, 7, 6, 1, NULL, '招聘网站', NULL, 90.00, '2026-03-08 13:00:00', '2026-03-08 13:00:00', 0),
-                                                                                                                                                                                        (8, 2, 15, 4, 6, 1, NULL, '内推', NULL, 95.00, '2026-03-15 10:30:00', '2026-03-15 10:30:00', 0),
-                                                                                                                                                                                        (9, 4, 14, 6, 4, 2, 2, '招聘网站', NULL, 60.00, '2026-03-22 15:00:00', '2026-03-22 15:00:00', 0),
-                                                                                                                                                                                        (10, 3, 19, 8, 6, 1, NULL, '内推', NULL, 88.00, '2026-04-01 09:00:00', '2026-04-01 09:00:00', 0),
-                                                                                                                                                                                        (11, 6, 20, 9, 4, 2, 2, '招聘网站', NULL, 72.00, '2026-04-10 14:30:00', '2026-04-10 14:30:00', 0),
-                                                                                                                                                                                        (12, 1, 16, 4, 4, 2, 1, '校招', NULL, 55.00, '2026-04-18 11:00:00', '2026-04-18 11:00:00', 0),
-                                                                                                                                                                                        (13, 5, 21, 7, 6, 1, NULL, '招聘网站', NULL, 82.00, '2026-05-05 10:00:00', '2026-05-05 10:00:00', 0),
-                                                                                                                                                                                        (14, 3, 15, 4, 4, 2, 2, '官网投递', NULL, 78.00, '2026-05-12 09:30:00', '2026-05-12 09:30:00', 0),
-                                                                                                                                                                                        (15, 6, 22, 8, 6, 1, NULL, '内推', NULL, 91.00, '2026-05-18 16:00:00', '2026-05-18 16:00:00', 0),
-                                                                                                                                                                                        (16, 2, 17, 5, 4, 2, 2, '官网投递', NULL, 68.00, '2026-05-25 13:45:00', '2026-05-25 13:45:00', 0),
-                                                                                                                                                                                        (17, 4, 23, 9, 4, 2, 1, '招聘网站', NULL, 58.00, '2026-05-28 10:00:00', '2026-05-28 10:00:00', 0),
-                                                                                                                                                                                        (18, 1, 24, 5, 2, 0, NULL, '招聘网站', NULL, 85.00, '2026-06-01 09:00:00', '2026-06-01 09:00:00', 0),
-                                                                                                                                                                                        (19, 3, 18, 7, 2, 0, NULL, '校招', NULL, 76.00, '2026-06-05 14:00:00', '2026-06-05 14:00:00', 0),
-                                                                                                                                                                                        (20, 6, 25, 9, 1, 0, NULL, '内推', NULL, 88.00, '2026-06-08 10:30:00', '2026-06-08 10:30:00', 0),
-                                                                                                                                                                                        (21, 2, 20, 8, 0, 0, NULL, '官网投递', NULL, NULL, '2026-06-10 11:00:00', '2026-06-10 11:00:00', 0),
-                                                                                                                                                                                        (22, 5, 22, 7, 0, 0, NULL, '招聘网站', NULL, NULL, '2026-06-12 09:30:00', '2026-06-12 09:30:00', 0),
-                                                                                                                                                                                        (23, 1, 19, 9, 0, 0, NULL, '校招', NULL, NULL, '2026-06-15 15:00:00', '2026-06-15 15:00:00', 0),
-                                                                                                                                                                                        (24, 6, 16, 5, 7, 2, 6, '招聘网站', '候选人撤回', 80.00, '2026-06-16 10:00:00', '2026-06-16 10:00:00', 0),
-                                                                                                                                                                                        (25, 3, 23, 8, 1, 0, NULL, '内推', NULL, 90.00, '2026-06-18 14:30:00', '2026-06-18 14:30:00', 0),
-                                                                                                                                                                                        (26, 4, 21, 5, 0, 0, NULL, '官网投递', NULL, NULL, '2026-06-20 09:00:00', '2026-06-20 09:00:00', 0),
-                                                                                                                                                                                        (27, 2, 24, 9, 3, 0, NULL, '招聘网站', NULL, 83.00, '2026-06-22 11:30:00', '2026-06-22 11:30:00', 0),
-                                                                                                                                                                                        (28, 5, 25, 7, 1, 0, NULL, '内推', NULL, 77.00, '2026-06-25 16:00:00', '2026-06-25 16:00:00', 0);
+                                                                                                                                                                                        (40, 6, 29, 10, 0, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:22:13', '2026-06-29 14:22:13', 0),
+                                                                                                                                                                                        (41, 3, 30, 7, 1, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:23:01', '2026-06-29 14:23:01', 0),
+                                                                                                                                                                                        (42, 2, 31, 8, 2, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:23:55', '2026-06-29 14:23:55', 0),
+                                                                                                                                                                                        (43, 1, 32, 6, 2, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:26:41', '2026-06-29 14:26:41', 0),
+                                                                                                                                                                                        (44, 6, 33, 5, 3, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:27:42', '2026-06-29 14:27:42', 0),
+                                                                                                                                                                                        (45, 3, 34, 4, 5, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:28:51', '2026-06-29 14:28:51', 0),
+                                                                                                                                                                                        (46, 3, 35, 9, 5, 0, NULL, NULL, NULL, NULL, '2026-06-29 14:29:51', '2026-06-29 14:29:51', 0);
 
 -- 导出  表 recruitment_db.employee 结构
 CREATE TABLE IF NOT EXISTS `employee` (
@@ -121,16 +101,10 @@ CREATE TABLE IF NOT EXISTS `employee` (
                                           PRIMARY KEY (`id`),
                                           UNIQUE KEY `uk_offer_id` (`offer_id`),
                                           CONSTRAINT `fk_employee_offer` FOREIGN KEY (`offer_id`) REFERENCES `offer` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='员工档案表';
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='员工档案表';
 
--- 正在导出表  recruitment_db.employee 的数据：~5 rows (大约)
+-- 正在导出表  recruitment_db.employee 的数据：~0 rows (大约)
 DELETE FROM `employee`;
-INSERT INTO `employee` (`id`, `offer_id`, `name`, `phone`, `email`, `department`, `position`, `expected_join_date`, `actual_join_date`, `join_date`, `id_card_status`, `contract_status`, `medical_report_status`, `profile_data`, `status`, `create_time`, `update_time`) VALUES
-                                                                                                                                                                                                                                                                               (1, 1, '孙七', '13900000003', 'sunqi@email.com', '技术部', 'Java开发工程师', '2026-01-25', '2026-01-20', '2026-01-20', 1, 1, 1, NULL, 1, '2026-01-20 09:00:00', '2026-01-20 09:00:00'),
-                                                                                                                                                                                                                                                                               (2, 2, '王五', '18266789559', 'wangwu@email.com', '产品部', '产品经理', '2026-02-28', '2026-02-25', '2026-02-25', 1, 1, 1, NULL, 1, '2026-02-25 09:00:00', '2026-02-25 09:00:00'),
-                                                                                                                                                                                                                                                                               (3, 4, '周八', '13900000004', 'zhouba@email.com', '技术部', 'Java开发工程师', '2026-03-25', '2026-03-20', '2026-03-20', 1, 1, 1, NULL, 1, '2026-03-20 09:00:00', '2026-03-20 09:00:00'),
-                                                                                                                                                                                                                                                                               (4, 5, '吴九', '13900000005', 'wujiu@email.com', '技术部', '前端开发工程师', '2026-04-20', '2026-04-15', '2026-04-15', 1, 1, 1, NULL, 1, '2026-04-15 09:00:00', '2026-04-15 09:00:00'),
-                                                                                                                                                                                                                                                                               (5, 8, '郑十', '13256389456', 'zhengshi@email.com', '数据部', '数据分析师', '2026-05-25', '2026-05-20', '2026-05-20', 1, 1, 0, NULL, 1, '2026-05-20 09:00:00', '2026-05-20 09:00:00');
 
 -- 导出  表 recruitment_db.interview 结构
 CREATE TABLE IF NOT EXISTS `interview` (
@@ -150,26 +124,16 @@ CREATE TABLE IF NOT EXISTS `interview` (
                                            KEY `idx_interviewer` (`interviewer_id`),
                                            CONSTRAINT `fk_interview_app` FOREIGN KEY (`application_id`) REFERENCES `application` (`id`),
                                            CONSTRAINT `fk_interviewer_user` FOREIGN KEY (`interviewer_id`) REFERENCES `sys_user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='面试表';
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='面试表';
 
--- 正在导出表  recruitment_db.interview 的数据：~15 rows (大约)
+-- 正在导出表  recruitment_db.interview 的数据：~0 rows (大约)
 DELETE FROM `interview`;
 INSERT INTO `interview` (`id`, `application_id`, `interview_time`, `location`, `interviewer_id`, `interviewer_name`, `status`, `result`, `evaluation`, `create_time`, `update_time`) VALUES
-                                                                                                                                                                                         (1, 1, '2026-01-15 10:00:00', '301会议室', 3, '李HR', 1, 1, '技术能力强，表达流利', '2026-01-12 09:00:00', '2026-01-15 10:00:00'),
-                                                                                                                                                                                         (2, 4, '2026-02-18 14:00:00', '201会议室', 3, '李HR', 1, 1, '产品思维清晰，经验丰富', '2026-02-15 09:00:00', '2026-02-18 14:00:00'),
-                                                                                                                                                                                         (3, 5, '2026-02-25 10:00:00', '301会议室', 3, '李HR', 1, 2, '测试基础较弱', '2026-02-22 09:00:00', '2026-02-25 10:00:00'),
-                                                                                                                                                                                         (4, 7, '2026-03-12 14:00:00', '线上腾讯会议', 3, '李HR', 1, 1, '架构能力强，技术扎实', '2026-03-10 09:00:00', '2026-03-12 14:00:00'),
-                                                                                                                                                                                         (5, 8, '2026-03-18 10:00:00', '201会议室', 3, '李HR', 1, 1, '管理能力突出', '2026-03-16 09:00:00', '2026-03-18 10:00:00'),
-                                                                                                                                                                                         (6, 10, '2026-04-05 14:00:00', '301会议室', 3, '李HR', 1, 1, '前端技术全面，Vue熟练', '2026-04-03 09:00:00', '2026-04-05 14:00:00'),
-                                                                                                                                                                                         (7, 11, '2026-04-14 10:00:00', '线上腾讯会议', 3, '李HR', 1, 2, '测试方法不够系统', '2026-04-12 09:00:00', '2026-04-14 10:00:00'),
-                                                                                                                                                                                         (8, 13, '2026-05-08 14:00:00', '201会议室', 3, '李HR', 1, 1, '数据分析能力强，SQL熟练', '2026-05-06 09:00:00', '2026-05-08 14:00:00'),
-                                                                                                                                                                                         (9, 15, '2026-05-22 10:00:00', '301会议室', 3, '李HR', 1, 1, '测试经验丰富，自动化能力强', '2026-05-20 09:00:00', '2026-05-22 10:00:00'),
-                                                                                                                                                                                         (10, 16, '2026-05-28 14:00:00', '线上腾讯会议', 3, '李HR', 1, 2, '产品经验不足', '2026-05-26 09:00:00', '2026-05-28 14:00:00'),
-                                                                                                                                                                                         (11, 18, '2026-06-05 10:00:00', '301会议室', 3, '李HR', 1, 0, '待定，需二面', '2026-06-03 09:00:00', '2026-06-05 10:00:00'),
-                                                                                                                                                                                         (12, 19, '2026-06-08 14:00:00', '201会议室', 3, '李HR', 1, 0, '前端基础可以，待观察', '2026-06-06 09:00:00', '2026-06-08 14:00:00'),
-                                                                                                                                                                                         (13, 25, '2026-06-22 10:00:00', '线上腾讯会议', 3, '李HR', 1, 1, '优秀候选人', '2026-06-20 09:00:00', '2026-06-22 10:00:00'),
-                                                                                                                                                                                         (14, 27, '2026-06-26 14:00:00', '301会议室', 3, '李HR', 0, 0, NULL, '2026-06-24 09:00:00', '2026-06-24 09:00:00'),
-                                                                                                                                                                                         (15, 28, '2026-06-28 10:00:00', '201会议室', 3, '李HR', 0, 0, NULL, '2026-06-26 09:00:00', '2026-06-26 09:00:00');
+                                                                                                                                                                                         (23, 42, '2026-06-30 00:00:00', '101', NULL, 'lxt', 0, 0, NULL, '2026-06-29 14:24:10', '2026-06-29 14:24:10'),
+                                                                                                                                                                                         (24, 43, '2026-06-30 00:00:00', '102', NULL, 'lxt', 1, 1, 'good', '2026-06-29 14:26:57', '2026-06-29 14:26:57'),
+                                                                                                                                                                                         (25, 44, '2026-06-30 00:00:00', '201', NULL, 'lxt', 1, 1, 'good', '2026-06-29 14:27:58', '2026-06-29 14:27:58'),
+                                                                                                                                                                                         (26, 45, '2026-06-30 00:00:00', '301', NULL, 'lxt', 1, 1, 'good', '2026-06-29 14:29:02', '2026-06-29 14:29:02'),
+                                                                                                                                                                                         (27, 46, '2026-06-30 00:00:00', '401', NULL, 'lxt', 1, 1, 'good', '2026-06-29 14:30:02', '2026-06-29 14:30:02');
 
 -- 导出  表 recruitment_db.job_post 结构
 CREATE TABLE IF NOT EXISTS `job_post` (
@@ -217,18 +181,14 @@ CREATE TABLE IF NOT EXISTS `offer` (
                                        PRIMARY KEY (`id`),
                                        UNIQUE KEY `uk_offer_app` (`application_id`),
                                        CONSTRAINT `fk_offer_app` FOREIGN KEY (`application_id`) REFERENCES `application` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='录用表';
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='录用表';
 
--- 正在导出表  recruitment_db.offer 的数据：~7 rows (大约)
+-- 正在导出表  recruitment_db.offer 的数据：~0 rows (大约)
 DELETE FROM `offer`;
 INSERT INTO `offer` (`id`, `application_id`, `offer_time`, `expected_join_date`, `status`, `docs_submitted`, `salary`, `benefits`, `remark`, `create_time`, `update_time`) VALUES
-                                                                                                                                                                               (1, 1, '2026-01-18 10:00:00', '2026-01-25', 3, NULL, '18k', '五险一金、年终奖', NULL, '2026-01-18 10:00:00', '2026-01-18 10:00:00'),
-                                                                                                                                                                               (2, 4, '2026-02-20 14:00:00', '2026-02-28', 3, NULL, '15k', '五险一金、年终奖', NULL, '2026-02-20 14:00:00', '2026-02-20 14:00:00'),
-                                                                                                                                                                               (4, 7, '2026-03-16 09:00:00', '2026-03-25', 3, NULL, '22k', '五险一金、股票期权', NULL, '2026-03-16 09:00:00', '2026-03-16 09:00:00'),
-                                                                                                                                                                               (5, 8, '2026-03-20 10:00:00', '2026-04-01', 3, NULL, '16k', '五险一金、年终奖', NULL, '2026-03-20 10:00:00', '2026-03-20 10:00:00'),
-                                                                                                                                                                               (6, 10, '2026-04-08 14:00:00', '2026-04-20', 3, NULL, '17k', '五险一金、年终奖', NULL, '2026-04-08 14:00:00', '2026-04-08 14:00:00'),
-                                                                                                                                                                               (7, 13, '2026-05-10 10:00:00', '2026-05-25', 3, NULL, '14k', '五险一金', NULL, '2026-05-10 10:00:00', '2026-05-10 10:00:00'),
-                                                                                                                                                                               (8, 15, '2026-05-24 14:00:00', '2026-06-01', 3, NULL, '15k', '五险一金、年终奖', NULL, '2026-05-24 14:00:00', '2026-05-24 14:00:00');
+                                                                                                                                                                               (13, 44, '2026-06-29 14:28:20', '2026-06-30', 0, NULL, '11', '五险一金', 'good', '2026-06-29 14:28:20', '2026-06-29 14:28:20'),
+                                                                                                                                                                               (14, 45, '2026-06-29 14:29:19', '2026-06-30', 1, NULL, '14', '带薪年假', 'good', '2026-06-29 14:29:19', '2026-06-29 14:29:19'),
+                                                                                                                                                                               (15, 46, '2026-06-29 14:30:25', '2026-06-30', 1, '{"contract": true, "idCardBack": true, "contractUrl": "https://companyrecruit.oss-cn-beijing.aliyuncs.com/upload/d1eb49c9-6a3d-49be-a708-b941f65a4001.pdf", "idCardFront": true, "idCardBackUrl": "https://companyrecruit.oss-cn-beijing.aliyuncs.com/upload/00c2d297-630d-48ff-b9d5-83b907194eaa.pdf", "medicalReport": true, "idCardFrontUrl": "https://companyrecruit.oss-cn-beijing.aliyuncs.com/upload/8a8fd2f0-ab37-48ba-b96b-b3c8fff872db.pdf", "medicalReportUrl": "https://companyrecruit.oss-cn-beijing.aliyuncs.com/upload/da35e41d-fadb-4c5d-bff5-51e68fa0513c.pdf"}', '14', '五险一金', 'good', '2026-06-29 14:30:25', '2026-06-29 14:30:25');
 
 -- 导出  表 recruitment_db.resume 结构
 CREATE TABLE IF NOT EXISTS `resume` (
@@ -248,24 +208,18 @@ CREATE TABLE IF NOT EXISTS `resume` (
                                         KEY `idx_resume_upload_by` (`upload_by`),
                                         KEY `idx_resume_tags` (`tags`),
                                         CONSTRAINT `fk_resume_user` FOREIGN KEY (`upload_by`) REFERENCES `sys_user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='简历表';
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='简历表';
 
--- 正在导出表  recruitment_db.resume 的数据：~13 rows (大约)
+-- 正在导出表  recruitment_db.resume 的数据：~7 rows (大约)
 DELETE FROM `resume`;
 INSERT INTO `resume` (`id`, `original_filename`, `file_path`, `file_size`, `upload_by`, `parse_status`, `parsed_json`, `vector_id`, `tags`, `upload_time`, `update_time`) VALUES
-                                                                                                                                                                              (13, '刘一.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/dcfa5780-ca0a-4d6f-8822-dbc545d06dea.pdf', 748361, 6, 1, '{"name": "刘一", "email": "Liuyi@163.com", "major": "计算机科学与技术", "phone": "15678398796", "school": "聊城大学", "skills": "Java, JVM, Spring, SpringMVC, SpringBoot, Spring Cloud Alibaba, Nacos, OpenFeign, Gateway, Sentinel, Seata, MyBatis, MyBatis-Plus, MySQL, Redis, RocketMQ, Kafka, XXL-Job, Elasticsearch, Maven, Gradle, Git, Linux, Docker, Apifox, SkyWalking, Postman", "education": "本科", "experience": "2年", "expectedSalary": "", "graduationYear": "2022", "currentPosition": "Java开发工程师"}', NULL, 'Java, JVM, Spring, SpringMVC, SpringBoot, Spring Cloud Alibaba, Nacos, OpenFeign, Gateway, Sentinel, Seata, MyBatis, MyBatis-Plus, MySQL, Redis, RocketMQ, Kafka, XXL-Job, Elasticsearch, Maven, Gradle, Git, Linux, Docker, Apifox, SkyWalking, Postman', '2026-06-24 09:36:00', '2026-06-24 09:36:00'),
-                                                                                                                                                                              (14, '郑十.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/24d67d6e-8c96-4861-8336-768b1c3b552a.pdf', 755479, 6, 1, '{"name": "郑十", "email": "Zhengshi@163.com", "major": "数字媒体技术", "phone": "13256389456", "school": "郑州大学", "skills": "PS,AI,PR,AE,剪映,C4D,Excel,PPT,飞书,钉钉,Canva,HTML,CSS,新抖,蝉妈妈", "education": "硕士", "experience": "2024.07-至今 曦曦商贸有限公司 市场专员; 2023.07-2023.09 建文文化传媒公司 市场实习生", "expectedSalary": "10k", "graduationYear": "2020", "currentPosition": "市场专员"}', NULL, 'PS,AI,PR,AE,剪映,C4D,Excel,PPT,飞书,钉钉,Canva,HTML,CSS,新抖,蝉妈妈', '2026-06-24 09:37:02', '2026-06-24 09:37:02'),
-                                                                                                                                                                              (15, '王五.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/f7d5e26d-77bd-45a0-bf0a-57c0d9cdae93.pdf', 552251, 4, 1, '{"name": "王五", "email": "852747830@qq.com", "major": "软件工程", "phone": "18266789559", "school": "山东理工大学", "skills": "Java,Spring,Spring MVC,Spring Boot,Spring Cloud Alibaba,Nacos,Gateway,OpenFeign,Sentinel,Seata,MyBatis,MyBatis-Plus,MySQL,Redis,Elasticsearch,RocketMQ,Kafka,XXL-Job,Maven,Git,Docker,Apifox,SkyWalking,Spring Security", "education": "本科", "experience": "4年", "expectedSalary": "", "graduationYear": "2023", "currentPosition": "Java开发工程师"}', NULL, 'Java,Spring,Spring MVC,Spring Boot,Spring Cloud Alibaba,Nacos,Gateway,OpenFeign,Sentinel,Seata,MyBatis,MyBatis-Plus,MySQL,Redis,Elasticsearch,RocketMQ,Kafka,XXL-Job,Maven,Git,Docker,Apifox,SkyWalking,Spring Security', '2026-06-24 10:26:44', '2026-06-24 10:26:44'),
-                                                                                                                                                                              (16, '赵六.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0001-4000-8000-000000000016.pdf', 620000, 5, 1, '{"name": "赵六", "email": "zhaoliu@163.com", "major": "产品设计", "phone": "13900000002", "school": "武汉大学", "skills": "Axure,Sketch,Visio,PRD,原型设计,数据分析", "education": "本科", "experience": "3年", "expectedSalary": "15k", "graduationYear": "2021", "currentPosition": "产品经理"}', NULL, 'Axure,Sketch,Visio,PRD,原型设计,数据分析', '2026-01-05 10:00:00', '2026-01-05 10:00:00'),
-                                                                                                                                                                              (17, '吴九.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0002-4000-8000-000000000017.pdf', 580000, 8, 1, '{"name": "吴九", "email": "wujiu@163.com", "major": "前端开发", "phone": "13900000005", "school": "华中科技大学", "skills": "Vue,React,JavaScript,TypeScript,CSS,HTML,Webpack,Vite", "education": "本科", "experience": "2年", "expectedSalary": "12k", "graduationYear": "2022", "currentPosition": "前端开发工程师"}', NULL, 'Vue,React,JavaScript,TypeScript,CSS,HTML,Webpack,Vite', '2026-02-10 14:00:00', '2026-02-10 14:00:00'),
-                                                                                                                                                                              (18, '周八.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0003-4000-8000-000000000018.pdf', 710000, 7, 1, '{"name": "周八", "email": "zhouba@163.com", "major": "计算机科学", "phone": "13900000004", "school": "浙江大学", "skills": "Java,Spring,MySQL,Redis,Docker,K8s", "education": "硕士", "experience": "5年", "expectedSalary": "22k", "graduationYear": "2019", "currentPosition": "高级Java工程师"}', NULL, 'Java,Spring,MySQL,Redis,Docker,K8s', '2026-03-05 09:00:00', '2026-03-05 09:00:00'),
-                                                                                                                                                                              (19, '孙七.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0004-4000-8000-000000000019.pdf', 550000, 6, 1, '{"name": "孙七", "email": "sunqi@163.com", "major": "数据科学", "phone": "13900000003", "school": "南京大学", "skills": "Python,SQL,Tableau,机器学习,数据挖掘", "education": "硕士", "experience": "3年", "expectedSalary": "16k", "graduationYear": "2020", "currentPosition": "数据分析师"}', NULL, 'Python,SQL,Tableau,机器学习,数据挖掘', '2026-03-20 11:00:00', '2026-03-20 11:00:00'),
-                                                                                                                                                                              (20, '冯十一.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0005-4000-8000-000000000020.pdf', 490000, 9, 1, '{"name": "冯十一", "email": "feng11@163.com", "major": "市场营销", "phone": "13900000011", "school": "上海大学", "skills": "营销策划,文案写作,新媒体运营,数据分析", "education": "本科", "experience": "2年", "expectedSalary": "9k", "graduationYear": "2022", "currentPosition": "市场专员"}', NULL, '营销策划,文案写作,新媒体运营,数据分析', '2026-04-05 15:00:00', '2026-04-05 15:00:00'),
-                                                                                                                                                                              (21, '陈十二.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0006-4000-8000-000000000021.pdf', 630000, 7, 1, '{"name": "陈十二", "email": "chen12@163.com", "major": "软件测试", "phone": "13900000012", "school": "北京邮电大学", "skills": "Selenium,JMeter,Postman,自动化测试,性能测试", "education": "本科", "experience": "3年", "expectedSalary": "13k", "graduationYear": "2021", "currentPosition": "测试工程师"}', NULL, 'Selenium,JMeter,Postman,自动化测试,性能测试', '2026-04-15 10:00:00', '2026-04-15 10:00:00'),
-                                                                                                                                                                              (22, '林十三.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0007-4000-8000-000000000022.pdf', 570000, 8, 1, '{"name": "林十三", "email": "lin13@163.com", "major": "前端工程", "phone": "13900000013", "school": "电子科技大学", "skills": "Vue3,React,TypeScript,Tailwind,Node.js", "education": "本科", "experience": "2年", "expectedSalary": "14k", "graduationYear": "2022", "currentPosition": "前端开发"}', NULL, 'Vue3,React,TypeScript,Tailwind,Node.js', '2026-05-10 09:00:00', '2026-05-10 09:00:00'),
-                                                                                                                                                                              (23, '黄十四.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0008-4000-8000-000000000023.pdf', 680000, 9, 1, '{"name": "黄十四", "email": "huang14@163.com", "major": "软件工程", "phone": "13900000014", "school": "四川大学", "skills": "Java,Spring Boot,MyBatis,MySQL,Redis", "education": "本科", "experience": "1年", "expectedSalary": "10k", "graduationYear": "2024", "currentPosition": "Java开发"}', NULL, 'Java,Spring Boot,MyBatis,MySQL,Redis', '2026-05-20 14:00:00', '2026-05-20 14:00:00'),
-                                                                                                                                                                              (24, '何十五.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0009-4000-8000-000000000024.pdf', 720000, 5, 1, '{"name": "何十五", "email": "he15@163.com", "major": "计算机应用", "phone": "13900000015", "school": "西安交通大学", "skills": "Java,Spring Cloud,Microservices,Docker,K8s", "education": "硕士", "experience": "4年", "expectedSalary": "20k", "graduationYear": "2020", "currentPosition": "后端开发"}', NULL, 'Java,Spring Cloud,Microservices,Docker,K8s', '2026-05-25 11:00:00', '2026-05-25 11:00:00'),
-                                                                                                                                                                              (25, '马十六.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/a1b2c3d4-0010-4000-8000-000000000025.pdf', 650000, 7, 1, '{"name": "马十六", "email": "ma16@163.com", "major": "测试工程", "phone": "13900000016", "school": "重庆大学", "skills": "TestNG,Pytest,Selenium,CI/CD,自动化测试", "education": "本科", "experience": "3年", "expectedSalary": "14k", "graduationYear": "2021", "currentPosition": "测试开发"}', NULL, 'TestNG,Pytest,Selenium,CI/CD,自动化测试', '2026-06-01 10:00:00', '2026-06-01 10:00:00');
+                                                                                                                                                                              (29, '刘一.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/e1d3847b-fbc4-492d-9007-ebd98d95cd69.pdf', 748361, 10, 0, NULL, NULL, NULL, '2026-06-29 14:21:39', '2026-06-29 14:21:39'),
+                                                                                                                                                                              (30, '周八.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/5b8ccab7-40a4-48c3-81e8-c46d850f9b24.pdf', 584696, 7, 0, NULL, NULL, NULL, '2026-06-29 14:22:55', '2026-06-29 14:22:55'),
+                                                                                                                                                                              (31, '吴九.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/1ca2c3b3-93e3-4249-b473-fbc6e88a12d7.pdf', 608192, 8, 0, NULL, NULL, NULL, '2026-06-29 14:23:51', '2026-06-29 14:23:51'),
+                                                                                                                                                                              (32, '孙七.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/8742a47e-0271-4c5b-80c7-c9e42b93b204.pdf', 525977, 6, 0, NULL, NULL, NULL, '2026-06-29 14:26:12', '2026-06-29 14:26:12'),
+                                                                                                                                                                              (33, '赵六.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/56121540-775f-4160-a707-69c8f0fc56bc.pdf', 601179, 5, 0, NULL, NULL, NULL, '2026-06-29 14:27:38', '2026-06-29 14:27:38'),
+                                                                                                                                                                              (34, '王五.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/c1934371-029e-4564-acff-99e4b5d6ed7a.pdf', 552251, 4, 0, NULL, NULL, NULL, '2026-06-29 14:28:45', '2026-06-29 14:28:45'),
+                                                                                                                                                                              (35, '郑十.pdf', 'https://companyrecruit.oss-cn-beijing.aliyuncs.com/resume/d10ff54b-f7cc-4818-84b9-f54f248efdc7.pdf', 755479, 9, 0, NULL, NULL, NULL, '2026-06-29 14:29:48', '2026-06-29 14:29:48');
 
 -- 导出  表 recruitment_db.sys_menu 结构
 CREATE TABLE IF NOT EXISTS `sys_menu` (
@@ -283,7 +237,7 @@ CREATE TABLE IF NOT EXISTS `sys_menu` (
                                           PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单权限表';
 
--- 正在导出表  recruitment_db.sys_menu 的数据：~33 rows (大约)
+-- 正在导出表  recruitment_db.sys_menu 的数据：~32 rows (大约)
 DELETE FROM `sys_menu`;
 INSERT INTO `sys_menu` (`id`, `parent_id`, `name`, `permission`, `type`, `path`, `icon`, `sort_order`, `status`, `create_time`, `update_time`) VALUES
                                                                                                                                                    (1, 0, '岗位管理', 'job', 1, '/job', 'Briefcase', 1, 1, '2026-06-24 09:29:15', '2026-06-24 09:29:15'),
@@ -346,7 +300,7 @@ CREATE TABLE IF NOT EXISTS `sys_role_menu` (
                                                PRIMARY KEY (`role_id`,`menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色菜单关联表';
 
--- 正在导出表  recruitment_db.sys_role_menu 的数据：~58 rows (大约)
+-- 正在导出表  recruitment_db.sys_role_menu 的数据：~62 rows (大约)
 DELETE FROM `sys_role_menu`;
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
                                                        (1, 1),
@@ -432,9 +386,9 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
                                           KEY `idx_phone` (`phone`),
                                           KEY `idx_email` (`email`),
                                           KEY `idx_status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统用户表';
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统用户表';
 
--- 正在导出表  recruitment_db.sys_user 的数据：~10 rows (大约)
+-- 正在导出表  recruitment_db.sys_user 的数据：~12 rows (大约)
 DELETE FROM `sys_user`;
 INSERT INTO `sys_user` (`id`, `username`, `password`, `real_name`, `phone`, `email`, `avatar`, `status`, `dept_id`, `last_login_time`, `create_time`, `update_time`, `deleted`) VALUES
                                                                                                                                                                                     (1, 'admin', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '系统管理员', '13800000001', 'admin@company.com', NULL, 1, 1, '2026-06-08 09:00:00', '2026-06-24 09:29:15', '2026-06-24 09:29:15', 0),
@@ -446,7 +400,9 @@ INSERT INTO `sys_user` (`id`, `username`, `password`, `real_name`, `phone`, `ema
                                                                                                                                                                                     (7, 'candidate_zhou', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '周八', '13900000004', 'zhouba@email.com', NULL, 1, NULL, '2026-06-07 15:00:00', '2026-06-24 09:29:15', '2026-06-24 09:29:15', 0),
                                                                                                                                                                                     (8, 'candidate_wu', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '吴九', '13900000005', 'wujiu@email.com', NULL, 1, NULL, '2026-06-08 09:00:00', '2026-06-24 09:29:15', '2026-06-24 09:29:15', 0),
                                                                                                                                                                                     (9, 'candidate_zheng', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '郑十', '13900000006', 'zhengshi@email.com', NULL, 1, NULL, '2026-06-08 10:00:00', '2026-06-24 09:29:15', '2026-06-24 09:29:15', 0),
-                                                                                                                                                                                    (10, 'candidate_liu', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '刘一', '13900000007', 'liuyi@email.com', NULL, 0, NULL, NULL, '2026-06-24 09:29:15', '2026-06-24 09:29:15', 0);
+                                                                                                                                                                                    (10, 'candidate_liu', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '刘一', '13900000007', 'liuyi@email.com', NULL, 1, NULL, '2026-06-29 14:13:29', '2026-06-24 09:29:15', '2026-06-29 14:13:30', 0),
+                                                                                                                                                                                    (11, 'candidate_zhang', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '张三', '13900000011', 'zhangsan@email.com', NULL, 1, NULL, '2026-06-29 11:05:08', '2026-06-29 11:04:36', '2026-06-29 11:05:09', 0),
+                                                                                                                                                                                    (12, 'candidate_li', '$2a$10$jAsVSXEiWFrfG3CfumkwX.X50aMPEJEy.U.QJxTYpwhiIVIX0ZABu', '李四', '13900000012', 'lisi@email.com', NULL, 1, NULL, '2026-06-29 11:06:05', '2026-06-29 11:05:46', '2026-06-29 11:06:13', 0);
 
 -- 导出  表 recruitment_db.sys_user_role 结构
 CREATE TABLE IF NOT EXISTS `sys_user_role` (
@@ -466,10 +422,12 @@ INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
                                                        (6, 3),
                                                        (7, 3),
                                                        (8, 3),
-                                                       (9, 3);
+                                                       (9, 3),
+                                                       (10, 3),
+                                                       (11, 3),
+                                                       (12, 3);
 
 -- 导出  触发器 recruitment_db.trg_application_status_check 结构
-DROP TRIGGER IF EXISTS `trg_application_status_check`;
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 DELIMITER //
 CREATE TRIGGER `trg_application_status_check` BEFORE UPDATE ON `application` FOR EACH ROW BEGIN

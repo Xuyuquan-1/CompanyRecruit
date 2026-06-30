@@ -23,7 +23,7 @@ public interface InterviewService {
     /**
      * 安排面试
      */
-    void arrange(InterviewDTO dto);
+    String arrange(InterviewDTO dto);
 
     /**
      * 取消面试

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="application-manage">
     <el-card shadow="never" class="search-card">
       <el-form inline>
@@ -161,15 +161,15 @@ function openArrange(row) {
   arrangeVisible.value = true
 }
 async function submitArrange() {
-  if (!arrangeForm.interviewTime) { ElMessage.warning('请选择面试时间'); return }
+  if (!arrangeForm.interviewTime) { ElMessage.warning('请填写完整'); return }
   try {
-    await arrangeInterview({
+    const res = await arrangeInterview({
       applicationId: arrangeTarget.value.id,
       interviewTime: arrangeForm.interviewTime,
       location: arrangeForm.location,
       interviewerName: arrangeForm.interviewerName
     })
-    ElMessage.success('面试安排成功')
+    ElMessage.success(res.message || '面试安排成功')
     arrangeVisible.value = false
     loadData()
   } catch {}

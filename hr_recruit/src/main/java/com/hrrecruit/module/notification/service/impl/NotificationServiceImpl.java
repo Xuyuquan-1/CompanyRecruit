@@ -134,4 +134,21 @@ public class NotificationServiceImpl implements NotificationService {
         sysNotificationMapper.insert(notification);
         log.info("录用通知已发送给候选人ID: {}, 岗位: {}", candidateId, jobTitle);
     }
+
+    @Override
+    public void sendOfferAcceptedNotification(Long adminId, String candidateName, String jobTitle) {
+        SysNotification notification = new SysNotification();
+        notification.setUserId(adminId);
+        notification.setType(Constants.NOTIFY_TYPE_SYSTEM);
+        notification.setTitle("Offer被接受");
+        notification.setContent(String.format(
+            "应聘者【%s】已接受了【%s】岗位的录用通知，将进入入职资料提交阶段。",
+            candidateName, jobTitle
+        ));
+        notification.setIsRead(Constants.NOTIFY_UNREAD);
+        notification.setSendTime(LocalDateTime.now());
+        sysNotificationMapper.insert(notification);
+        log.info("Offer接受通知已发送给管理员 adminId={}, candidate={}, job={}", adminId, candidateName, jobTitle);
+    }
+
 }

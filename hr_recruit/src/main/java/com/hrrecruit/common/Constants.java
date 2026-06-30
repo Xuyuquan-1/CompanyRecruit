@@ -75,6 +75,8 @@ public final class Constants {
     public static final int RESUME_PARSE_SUCCESS  = 1;
     /** 解析状态：解析失败 */
     public static final int RESUME_PARSE_FAILED   = 2;
+    /** 解析状态：解析失败，字段缺失 */
+    public static final int RESUME_PARSE_MISSING_FIELD = 3;
 
     // ============ 菜单类型 ============
     /** 菜单类型：目录 */

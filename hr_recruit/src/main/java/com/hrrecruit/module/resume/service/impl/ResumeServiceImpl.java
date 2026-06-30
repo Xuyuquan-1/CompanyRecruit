@@ -23,6 +23,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -107,6 +108,11 @@ public class ResumeServiceImpl implements ResumeService {
 
         resumeMapper.insert(resume);
         log.info("简历上传成功，路径: {}", filePath);
+        try {
+            parse(resume.getId());
+        } catch (Exception e) {
+            log.warn("自动解析失败，需手动触发解析, id: {}, error: {}", resume.getId(), e.getMessage());
+        }
         return resume;
     }
 
@@ -136,6 +142,7 @@ public class ResumeServiceImpl implements ResumeService {
         }
     }
 
+    @Transactional
     @Override
     public Resume parse(Long id) {
         Resume resume = getById(id);
@@ -156,30 +163,59 @@ public class ResumeServiceImpl implements ResumeService {
             throw new BusinessException("无法从文件中提取文本，请确认文件内容不是纯图片");
         }
 
-        // 3. AI 解析
+        // 3. AI 解析（带重试，最多3次尝试）
+        String parsedJson = null;
+        int maxRetries = 2;
+        Exception lastException = null;
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                parsedJson = parseWithAI(text);
+                break;
+            } catch (Exception e) {
+                lastException = e;
+                if (attempt < maxRetries) {
+                    log.warn("AI解析失败，第{}次重试, id: {}", attempt + 1, id, e);
+                }
+            }
+        }
+
+        if (parsedJson == null) {
+            log.error("简历AI解析失败（已重试{}次）, id: {}", maxRetries, id, lastException);
+            resume.setParseStatus(Constants.RESUME_PARSE_FAILED);
+            resumeMapper.updateById(resume);
+            return resume;
+        }
+
+        // 4. 校验必填字段
+        boolean missingFields = false;
         try {
-            String parsedJson = parseWithAI(text);
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> parsedData = mapper.readValue(parsedJson, Map.class);
+            String name = parsedData.getOrDefault("name", "").toString();
+            String phone = parsedData.getOrDefault("phone", "").toString();
+            if (name.isEmpty() || phone.isEmpty()) {
+                missingFields = true;
+            }
+            // 提取技能标签
+            if (parsedData.containsKey("skills") && parsedData.get("skills") != null) {
+                String skills = parsedData.get("skills").toString();
+                if (!skills.isEmpty()) {
+                    resume.setTags(skills);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析JSON或提取标签失败: {}", e.getMessage());
+            missingFields = true;
+        }
+
+        if (missingFields) {
+            resume.setParsedJson(parsedJson);
+            resume.setParseStatus(Constants.RESUME_PARSE_MISSING_FIELD);
+            log.warn("简历解析完成但字段缺失（姓名/手机号为空）, id: {}", id);
+        } else {
             resume.setParsedJson(parsedJson);
             resume.setParseStatus(Constants.RESUME_PARSE_SUCCESS);
-            
-            // 4. 自动提取技能标签
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                Map<String, Object> parsedData = mapper.readValue(parsedJson, Map.class);
-                if (parsedData.containsKey("skills") && parsedData.get("skills") != null) {
-                    String skills = parsedData.get("skills").toString();
-                    if (!skills.isEmpty()) {
-                        resume.setTags(skills);
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("提取技能标签失败: {}", e.getMessage());
-            }
-            
             log.info("简历AI解析成功, id: {}", id);
-        } catch (Exception e) {
-            log.error("简历AI解析失败, id: {}", id, e);
-            resume.setParseStatus(Constants.RESUME_PARSE_FAILED);
         }
 
         resumeMapper.updateById(resume);

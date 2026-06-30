@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 录用管理服务实现
@@ -40,12 +42,11 @@ public class OfferServiceImpl implements OfferService {
 
     private final OfferMapper offerMapper;
     private final ApplicationMapper applicationMapper;
+    private final JobPostMapper jobPostMapper;
+    private final NotificationService notificationService;
     private final EmployeeMapper employeeMapper;
     private final ResumeMapper resumeMapper;
-    private final JobPostMapper jobPostMapper;
-    private final SysUserMapper sysUserMapper;
-    private final NotificationService notificationService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final SysUserMapper userMapper;
 
     @Override
     public PageResult<Offer> getPageList(OfferQueryDTO queryDTO) {
@@ -79,192 +80,26 @@ public class OfferServiceImpl implements OfferService {
         offer.setBenefits(dto.getBenefits());
         offer.setRemark(dto.getRemark());
         offer.setStatus(Constants.OFFER_STATUS_PENDING);
-
         offerMapper.insert(offer);
 
-        // 更新应聘状态为“待确认Offer”
         application.setStatus(Constants.APP_STATUS_OFFER_PENDING);
-        application.setRemark("已发送录用通知，薪资：" + dto.getSalary() + "，预计入职日期：" + dto.getExpectedJoinDate().toString());
+        application.setRemark("已发送录用通知，等待候选人确认");
+        application.setOfferId(offer.getId());
         applicationMapper.updateById(application);
-        
-        // 自动发送录用通知
-        if (application.getCandidateId() != null) {
-            try {
-                // 获取岗位信息
-                JobPost jobPost = jobPostMapper.selectById(application.getJobId());
-                String jobTitle = jobPost != null ? jobPost.getTitle() : "未知岗位";
-                
-                notificationService.sendOfferNotification(
-                    application.getCandidateId(),
-                    jobTitle,
-                    dto.getSalary(),
-                    dto.getBenefits(),
-                    dto.getExpectedJoinDate()
-                );
-            } catch (Exception e) {
-                // 通知失败不影响主流程
-                log.error("发送录用通知失败", e);
-            }
-        }
-    }
 
-    @Override
-    @Transactional
-    public void confirmOnboard(Long id, LocalDate joinDate) {
-        Offer offer = getById(id);
-        
-        // 检查Offer状态：只有已接受的Offer才能确认入职
-        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED) {
-            throw new BusinessException("只能对已接受Offer的应聘者确认入职");
-        }
-        
-        // 检查资料是否齐全
-        if (offer.getDocsSubmitted() == null || offer.getDocsSubmitted().isEmpty()) {
-            throw new BusinessException("应聘者尚未提交入职资料，无法确认入职");
-        }
-        
-        try {
-            JsonNode docs = objectMapper.readTree(offer.getDocsSubmitted());
-            
-            // 兼容新旧两种数据格式
-            boolean hasIdCard;
-            boolean hasContract;
-            boolean hasMedicalReport;
-            
-            // 新格式：区分身份证正反面
-            if (docs.has("idCardFront") && docs.has("idCardBack")) {
-                hasIdCard = docs.get("idCardFront").asBoolean() && docs.get("idCardBack").asBoolean();
-                hasContract = docs.has("contract") && docs.get("contract").asBoolean();
-                hasMedicalReport = docs.has("medicalReport") && docs.get("medicalReport").asBoolean();
-            } 
-            // 旧格式：中文键名
-            else if (docs.has("身份证") && docs.has("合同") && docs.has("体检报告")) {
-                hasIdCard = docs.get("身份证").asBoolean();
-                hasContract = docs.get("合同").asBoolean();
-                hasMedicalReport = docs.get("体检报告").asBoolean();
-                log.warn("检测到旧格式数据，建议重新提交资料以更新为新格式");
-            } 
-            else {
-                throw new BusinessException("资料提交记录格式不正确");
-            }
-            
-            if (!hasIdCard || !hasContract || !hasMedicalReport) {
-                throw new BusinessException("入职资料不齐全，请确认应聘者已提交：身份证、劳动合同、体检报告");
-            }
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BusinessException("解析资料提交记录失败");
-        }
-        
-        // 获取应聘记录信息
-        Application application = applicationMapper.selectById(offer.getApplicationId());
-        if (application == null) {
-            throw new BusinessException("应聘记录不存在");
-        }
-        
-        // 从 sys_user 表获取应聘者个人信息（优先级最高）
-        String name = "未知";
-        String phone = "";
-        String email = "";
-        
-        if (application.getCandidateId() != null) {
-            SysUser sysUser = sysUserMapper.selectById(application.getCandidateId());
-            if (sysUser != null) {
-                name = sysUser.getRealName() != null && !sysUser.getRealName().isEmpty() ? sysUser.getRealName() : "未知";
-                phone = sysUser.getPhone() != null ? sysUser.getPhone() : "";
-                email = sysUser.getEmail() != null ? sysUser.getEmail() : "";
-                log.info("从sys_user获取用户信息: {}", name);
-            } else {
-                log.warn("未找到用户ID为{}的sys_user记录", application.getCandidateId());
-            }
-        }
-        
-        // 如果sys_user中没有完整信息，尝试从简历中补充
-        Resume resume = resumeMapper.selectById(application.getResumeId());
-        String profileData = null;
-        
-        if (resume != null && resume.getParsedJson() != null) {
-            try {
-                // 解析简历JSON获取个人信息
-                JsonNode resumeData = objectMapper.readTree(resume.getParsedJson());
-                // 只有当sys_user中没有这些信息时才从简历获取
-                if (name.equals("未知") && resumeData.has("name")) {
-                    name = resumeData.get("name").asText();
-                }
-                if ((phone == null || phone.isEmpty()) && resumeData.has("phone")) {
-                    phone = resumeData.get("phone").asText();
-                }
-                if ((email == null || email.isEmpty()) && resumeData.has("email")) {
-                    email = resumeData.get("email").asText();
-                }
-                profileData = resume.getParsedJson();
-            } catch (Exception e) {
-                log.warn("解析简历失败: {}", e.getMessage());
-            }
-        }
-        
-        // 获取岗位信息（从Application关联的JobPost）
-        String department = "";
-        String position = "";
-        
         JobPost jobPost = jobPostMapper.selectById(application.getJobId());
-        if (jobPost != null) {
-            department = jobPost.getDepartment() != null ? jobPost.getDepartment() : "";
-            position = jobPost.getTitle() != null ? jobPost.getTitle() : "";
-        }
-        
-        // 创建员工档案
-        Employee employee = new Employee();
-        employee.setOfferId(offer.getId());
-        employee.setName(name);
-        employee.setPhone(phone);
-        employee.setEmail(email);
-        employee.setDepartment(department);
-        employee.setPosition(position);
-        employee.setExpectedJoinDate(offer.getExpectedJoinDate());
-        employee.setActualJoinDate(joinDate);
-        employee.setIdCardStatus(1);  // 已提交
-        employee.setContractStatus(1); // 已提交
-        employee.setMedicalReportStatus(1); // 已提交
-        employee.setProfileData(profileData); // 保存简历数据（可能为null）
-        employee.setStatus(1); // 在职
-        
-        employeeMapper.insert(employee);
-        log.info("员工档案创建成功: {} - {}", name, position);
-        
-        // 更新Offer状态为已入职
-        offer.setStatus(Constants.OFFER_STATUS_ONBOARDED);
-        offerMapper.updateById(offer);
-        
-        // 更新应聘记录状态为“已入职”
-        application.setStatus(Constants.APP_STATUS_ONBOARDED);
-        application.setResult(1); // 录用成功
-        application.setRemark("已确认入职，入职日期：" + joinDate.toString());
-        applicationMapper.updateById(application);
-        log.info("应聘记录状态更新为已入职: applicationId={}", application.getId());
-    }
+        String jobTitle = jobPost != null ? jobPost.getTitle() : "未知岗位";
 
-    @Override
-    @Transactional
-    public void rejectOffer(Long id, String reason) {
-        Offer offer = getById(id);
-        // 只有待确认或已接受状态的录用才能被拒绝
-        if (offer.getStatus() == null || (offer.getStatus() != Constants.OFFER_STATUS_PENDING && offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED)) {
-            throw new BusinessException("只有待确认或已接受状态的录用才能被拒绝");
-        }
-        
-        offer.setStatus(Constants.OFFER_STATUS_REJECTED);
-        offerMapper.updateById(offer);
-        
-        // 更新应聘记录状态为不录用，失败原因为“候选人拒Offer”
-        Application application = applicationMapper.selectById(offer.getApplicationId());
-        if (application != null) {
-            application.setStatus(Constants.APP_STATUS_REJECTED);
-            application.setResult(2); // 应聘失败
-            application.setRefuseType(Constants.REFUSE_TYPE_CANDIDATE_REFUSE);
-            application.setRemark("候选人拒绝Offer" + (reason != null && !reason.isEmpty() ? "，原因：" + reason : ""));
-            applicationMapper.updateById(application);
+        try {
+            notificationService.sendOfferNotification(
+                application.getCandidateId(),
+                jobTitle,
+                dto.getSalary(),
+                dto.getBenefits(),
+                dto.getExpectedJoinDate()
+            );
+        } catch (Exception e) {
+            log.error("发送录用通知失败", e);
         }
     }
 
@@ -272,19 +107,53 @@ public class OfferServiceImpl implements OfferService {
     @Transactional
     public void acceptOffer(Long id) {
         Offer offer = getById(id);
-        // 只有待确认状态的Offer才能被接受
         if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_PENDING) {
             throw new BusinessException("只有待确认状态的Offer才能被接受");
         }
-        
+
         offer.setStatus(Constants.OFFER_STATUS_ACCEPTED);
         offerMapper.updateById(offer);
-        
-        // 更新应聘记录状态为“已接受Offer(待入职)”
+
         Application application = applicationMapper.selectById(offer.getApplicationId());
         if (application != null) {
             application.setStatus(Constants.APP_STATUS_OFFER_ACCEPTED);
             application.setRemark("候选人已接受Offer，待提交入职资料");
+            applicationMapper.updateById(application);
+
+            try {
+                JobPost jobPost = jobPostMapper.selectById(application.getJobId());
+                String jobTitle = jobPost != null ? jobPost.getTitle() : "未知岗位";
+                if (jobPost != null && jobPost.getCreateUser() != null) {
+                    notificationService.sendOfferAcceptedNotification(
+                        jobPost.getCreateUser(),
+                        application.getCandidateName(),
+                        jobTitle
+                    );
+                }
+            } catch (Exception e) {
+                log.error("发送Offer接受通知给管理员失败", e);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void rejectOffer(Long id, String reason) {
+        Offer offer = getById(id);
+        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_PENDING) {
+            throw new BusinessException("只有待确认状态的Offer才能被拒绝");
+        }
+
+        offer.setStatus(Constants.OFFER_STATUS_REJECTED);
+        offer.setRemark(reason);
+        offerMapper.updateById(offer);
+
+        Application application = applicationMapper.selectById(offer.getApplicationId());
+        if (application != null) {
+            application.setStatus(Constants.APP_STATUS_REJECTED);
+            application.setResult(2);
+            application.setRefuseType(Constants.REFUSE_TYPE_CANDIDATE_REFUSE);
+            application.setRemark("候选人已拒绝Offer" + (reason != null && !reason.isEmpty() ? "，原因：" + reason : ""));
             applicationMapper.updateById(application);
         }
     }
@@ -293,42 +162,114 @@ public class OfferServiceImpl implements OfferService {
     @Transactional
     public void submitDocuments(Long id, String idCardFrontUrl, String idCardBackUrl, String medicalReportUrl, String contractUrl) {
         Offer offer = getById(id);
-        // 只有已接受状态的Offer才能提交资料
         if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED) {
-            throw new BusinessException("请先接受Offer后再提交入职资料");
+            throw new BusinessException("只有已接受Offer才能提交入职资料");
         }
-        
+
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            java.util.Map<String, Object> docsData = new java.util.HashMap<>();
-            
-            // 如果已有docsSubmitted，先解析出来
-            if (offer.getDocsSubmitted() != null && !offer.getDocsSubmitted().isEmpty()) {
-                docsData = mapper.readValue(offer.getDocsSubmitted(), java.util.Map.class);
-            }
-            
-            // 更新资料URL和状态
-            if (idCardFrontUrl != null && !idCardFrontUrl.isEmpty()) {
-                docsData.put("idCardFront", true);
-                docsData.put("idCardFrontUrl", idCardFrontUrl);
-            }
-            if (idCardBackUrl != null && !idCardBackUrl.isEmpty()) {
-                docsData.put("idCardBack", true);
-                docsData.put("idCardBackUrl", idCardBackUrl);
-            }
-            if (medicalReportUrl != null && !medicalReportUrl.isEmpty()) {
-                docsData.put("medicalReport", true);
-                docsData.put("medicalReportUrl", medicalReportUrl);
-            }
-            if (contractUrl != null && !contractUrl.isEmpty()) {
-                docsData.put("contract", true);
-                docsData.put("contractUrl", contractUrl);
-            }
-            
-            offer.setDocsSubmitted(mapper.writeValueAsString(docsData));
+            Map<String, String> docs = new HashMap<>();
+            docs.put("idCardFrontUrl", idCardFrontUrl);
+            docs.put("idCardBackUrl", idCardBackUrl);
+            docs.put("medicalReportUrl", medicalReportUrl);
+            docs.put("contractUrl", contractUrl);
+            ObjectMapper mapper = new ObjectMapper();
+            String docsJson = mapper.writeValueAsString(docs);
+            offer.setDocsSubmitted(docsJson);
             offerMapper.updateById(offer);
         } catch (Exception e) {
-            throw new BusinessException("提交资料失败: " + e.getMessage());
+            throw new BusinessException("资料保存失败");
         }
+    }
+
+    @Override
+    @Transactional
+    public void confirmOnboard(Long id, LocalDate joinDate) {
+        Offer offer = getById(id);
+        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED) {
+            throw new BusinessException("只有已接受Offer才能确认入职");
+        }
+        if (offer.getDocsSubmitted() == null) {
+            throw new BusinessException("候选人尚未提交入职资料，无法确认入职");
+        }
+
+        offer.setStatus(Constants.OFFER_STATUS_ONBOARDED);
+        offer.setExpectedJoinDate(joinDate);
+        offerMapper.updateById(offer);
+
+        Application application = applicationMapper.selectById(offer.getApplicationId());
+        if (application != null) {
+            application.setStatus(Constants.APP_STATUS_ONBOARDED);
+            application.setRemark("入职确认完成，已生成员工档案");
+            applicationMapper.updateById(application);
+
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode docsNode = mapper.readTree(offer.getDocsSubmitted());
+                Employee employee = new Employee();
+                employee.setName(application.getCandidateName());
+                employee.setPosition(application.getJobTitle());
+                employee.setOfferId(offer.getId());
+                employee.setExpectedJoinDate(joinDate);
+                employee.setStatus(1);
+                employee.setCreateTime(LocalDateTime.now());
+                employee.setUpdateTime(LocalDateTime.now());
+                employeeMapper.insert(employee);
+            } catch (Exception e) {
+                log.error("创建员工档案失败", e);
+                throw new BusinessException("创建员工档案失败");
+            }
+        }
+    }
+
+    @Transactional
+    public void approveDocuments(Long id) {
+        Offer offer = getById(id);
+        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED) {
+            throw new BusinessException("只有已接受Offer才能审核资料");
+        }
+        if (offer.getDocsSubmitted() == null) {
+            throw new BusinessException("候选人尚未提交入职资料");
+        }
+
+        offer.setStatus(Constants.OFFER_STATUS_ONBOARDED);
+        offerMapper.updateById(offer);
+
+        Application application = applicationMapper.selectById(offer.getApplicationId());
+        if (application != null) {
+            application.setStatus(Constants.APP_STATUS_ONBOARDED);
+            application.setRemark("入职资料审核通过，已办理入职");
+            applicationMapper.updateById(application);
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode docsNode = mapper.readTree(offer.getDocsSubmitted());
+            Employee employee = new Employee();
+            employee.setName(docsNode.has("name") ? docsNode.get("name").asText() : application.getCandidateName());
+            employee.setPosition(docsNode.has("jobTitle") ? docsNode.get("jobTitle").asText() : "");
+            employee.setOfferId(offer.getId());
+            employee.setStatus(1);
+            employee.setExpectedJoinDate(offer.getExpectedJoinDate());
+            employee.setCreateTime(LocalDateTime.now());
+            employee.setUpdateTime(LocalDateTime.now());
+            employeeMapper.insert(employee);
+        } catch (Exception e) {
+            log.error("创建员工记录失败", e);
+        }
+    }
+
+    @Transactional
+    public void rejectDocuments(Long id, String reason) {
+        Offer offer = getById(id);
+        if (offer.getStatus() == null || offer.getStatus() != Constants.OFFER_STATUS_ACCEPTED) {
+            throw new BusinessException("只有已接受Offer才能审核资料");
+        }
+        if (offer.getDocsSubmitted() == null) {
+            throw new BusinessException("候选人尚未提交入职资料");
+        }
+
+        offer.setDocsSubmitted(null);
+        offer.setRemark(reason != null ? reason : "入职资料审核不通过，请重新提交");
+        offerMapper.updateById(offer);
     }
 }

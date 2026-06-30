@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="candidate-jobs">
     <!-- 搜索区域 -->
     <el-card shadow="never" class="search-card">
@@ -124,6 +124,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getJobPage } from '../../api/job'
 import { getMyResumes, getMyApplications, submitApplication } from '../../api/application'
@@ -151,6 +152,7 @@ const currentJob = ref(null)
 // 简历选择
 const resumeVisible = ref(false)
 const resumeLoading = ref(false)
+const router = useRouter()
 const myResumes = ref([])
 
 // 加载岗位列表
@@ -225,7 +227,8 @@ async function applyJob(row) {
     if (res.code === 200) {
       myResumes.value = res.data || []
       if (myResumes.value.length === 0) {
-        ElMessage.warning('您还没有创建简历，请先创建简历')
+        ElMessage.warning('请先上传简历再投递')
+        router.push('/resume/list')
         return
       }
       currentJob.value = row
@@ -240,12 +243,14 @@ async function applyJob(row) {
 
 // 确认投递
 async function confirmApply(resume) {
+  if (currentJob.value.status !== 1) { ElMessage.warning('该岗位已关闭，无法投递'); return }
+  if (hasApplied(currentJob.value.id)) { ElMessage.warning('您已经投递过该岗位，请勿重复投递'); return }
   try {
     await submitApplication({
       jobId: currentJob.value.id,
       resumeId: resume.id
     })
-    ElMessage.success('投递成功！')
+    ElMessage.success('投递成功')
     resumeVisible.value = false
     // 重新加载应聘记录，确保状态正确
     await checkAppliedJobs()

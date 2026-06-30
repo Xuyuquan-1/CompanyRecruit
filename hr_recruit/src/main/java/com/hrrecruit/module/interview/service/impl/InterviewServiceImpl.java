@@ -1,5 +1,6 @@
 package com.hrrecruit.module.interview.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hrrecruit.common.Constants;
 import com.hrrecruit.common.PageResult;
@@ -50,9 +51,23 @@ public class InterviewServiceImpl implements InterviewService {
 
     @Override
     @Transactional
-    public void arrange(InterviewDTO dto) {
+    public String arrange(InterviewDTO dto) {
         if (dto.getInterviewTime() != null && dto.getInterviewTime().isBefore(java.time.LocalDateTime.now())) {
-            throw new BusinessException("面试时间必须晚于当前时间");
+            throw new BusinessException("面试时间不能早于当前时间");
+        }
+
+        if (dto.getInterviewerId() != null && dto.getInterviewTime() != null) {
+            java.time.LocalDateTime start = dto.getInterviewTime().minusMinutes(30);
+            java.time.LocalDateTime end = dto.getInterviewTime().plusMinutes(30);
+            long conflictCount = interviewMapper.selectCount(
+                new LambdaQueryWrapper<Interview>()
+                    .eq(Interview::getInterviewerId, dto.getInterviewerId())
+                    .between(Interview::getInterviewTime, start, end)
+                    .ne(Interview::getStatus, Constants.INTERVIEW_STATUS_CANCELLED)
+            );
+            if (conflictCount > 0) {
+                throw new BusinessException("该面试官在所选时间段已有面试");
+            }
         }
 
         Application application = applicationMapper.selectById(dto.getApplicationId());
@@ -73,14 +88,13 @@ public class InterviewServiceImpl implements InterviewService {
         application.setStatus(Constants.APP_STATUS_INTERVIEWING);
         application.setRemark("已安排面试，面试官：" + dto.getInterviewerName() + "，面试时间：" + dto.getInterviewTime().toString());
         applicationMapper.updateById(application);
-        
-        // 自动发送面试通知
+
+        boolean notifySuccess = true;
         if (application.getCandidateId() != null) {
             try {
-                // 获取岗位信息
                 JobPost jobPost = jobPostMapper.selectById(application.getJobId());
                 String jobTitle = jobPost != null ? jobPost.getTitle() : "未知岗位";
-                
+
                 notificationService.sendInterviewNotification(
                     application.getCandidateId(),
                     jobTitle,
@@ -89,10 +103,11 @@ public class InterviewServiceImpl implements InterviewService {
                     dto.getInterviewerName()
                 );
             } catch (Exception e) {
-                // 通知失败不影响主流程
+                notifySuccess = false;
                 log.error("发送面试通知失败", e);
             }
         }
+        return notifySuccess ? "面试安排成功" : "面试安排成功，但通知发送失败，请手动联系";
     }
 
     @Override
@@ -101,13 +116,12 @@ public class InterviewServiceImpl implements InterviewService {
         Interview interview = getById(id);
         interview.setStatus(Constants.INTERVIEW_STATUS_CANCELLED);
         interviewMapper.updateById(interview);
-        
-        // 更新应聘记录状态为不录用
+
         Application application = applicationMapper.selectById(interview.getApplicationId());
         if (application != null) {
             application.setStatus(Constants.APP_STATUS_REJECTED);
-            application.setResult(2); // 应聘失败
-            application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
+            application.setResult(2);
+            application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW);
             application.setRemark("面试已取消，标记为不录用");
             applicationMapper.updateById(application);
         }
@@ -125,15 +139,12 @@ public class InterviewServiceImpl implements InterviewService {
         Application application = applicationMapper.selectById(interview.getApplicationId());
         if (application != null) {
             if (result == Constants.INTERVIEW_RESULT_PASS) {
-                // 面试通过：保持status=2（面试中），表示面试已完成，可以发放Offer
-                // HR会根据面试结果决定是否发放Offer
                 application.setStatus(Constants.APP_STATUS_INTERVIEWING);
                 application.setRemark("面试评价完成，结果：通过");
             } else {
-                // 面试不通过：设置为不录用
                 application.setStatus(Constants.APP_STATUS_REJECTED);
-                application.setResult(2); // 应聘失败
-                application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW); // 失败原因：面试淘汰
+                application.setResult(2);
+                application.setRefuseType(Constants.REFUSE_TYPE_INTERVIEW);
                 application.setRemark("面试评价完成，结果：不通过");
             }
             applicationMapper.updateById(application);

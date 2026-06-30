@@ -6,49 +6,57 @@ import com.hrrecruit.entity.SysNotification;
 import java.util.List;
 
 /**
- * 消息通知服务接口
+ * 娑堟伅閫氱煡鏈嶅姟鎺ュ彛
  */
 public interface NotificationService {
 
     /**
-     * 获取当前用户的通知列表
+     * 鑾峰彇褰撳墠鐢ㄦ埛鐨勯€氱煡鍒楄〃
      */
     List<SysNotification> getMyNotifications();
 
     /**
-     * 标记通知为已读
+     * 鏍囪閫氱煡涓哄凡璇
      */
     void markAsRead(Long id);
 
     /**
-     * 全部标记为已读
+     * 鍏ㄩ儴鏍囪涓哄凡璇
      */
     void markAllAsRead();
 
     /**
-     * 获取未读数量
+     * 鑾峰彇鏈鏁伴噺
      */
     long getUnreadCount();
 
     /**
-     * 发送面试通知
-     * @param candidateId 应聘者ID
-     * @param jobTitle 岗位名称
-     * @param interviewTime 面试时间
-     * @param location 面试地点
-     * @param interviewerName 面试官姓名
+     * 鍙戦€侀潰璇曢€氱煡
+     * @param candidateId 搴旇仒鑰匢D
+     * @param jobTitle 宀椾綅鍚嶇О
+     * @param interviewTime 闈㈣瘯鏃堕棿
+     * @param location 闈㈣瘯鍦扮偣
+     * @param interviewerName 闈㈣瘯瀹樺鍚
      */
-    void sendInterviewNotification(Long candidateId, String jobTitle, java.time.LocalDateTime interviewTime, 
+    void sendInterviewNotification(Long candidateId, String jobTitle, java.time.LocalDateTime interviewTime,
                                     String location, String interviewerName);
 
     /**
-     * 发送录用通知（含资料提交说明）
-     * @param candidateId 应聘者ID
-     * @param jobTitle 岗位名称
-     * @param salary 薪资待遇
-     * @param benefits 福利说明
-     * @param expectedJoinDate 预计入职日期
+     * 鍙戦€佸綍鐢ㄩ€氱煡锛堝惈璧勬枡鎻愪氦璇存槑锛
+     * @param candidateId 搴旇仒鑰匢D
+     * @param jobTitle 宀椾綅鍚嶇О
+     * @param salary 钖祫寰呴亣
+     * @param benefits 绂忓埄璇存槑
+     * @param expectedJoinDate 棰勮鍏ヨ亴鏃ユ湡
      */
-    void sendOfferNotification(Long candidateId, String jobTitle, String salary, 
+    void sendOfferNotification(Long candidateId, String jobTitle, String salary,
                                String benefits, java.time.LocalDate expectedJoinDate);
+
+    /**
+     * 鍙戦€丱ffer鎺ュ彈閫氱煡锛堢粰绠＄悊鍛橈級
+     * @param adminId 绠＄悊鍛橈紙鎷涜仒鑰咃級ID
+     * @param candidateName 搴旇仒鑰呭鍚
+     * @param jobTitle 宀椾綅鍚嶇О
+     */
+    void sendOfferAcceptedNotification(Long adminId, String candidateName, String jobTitle);
 }

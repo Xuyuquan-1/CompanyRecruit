@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="resume-manage">
     <el-card shadow="never" class="search-card">
       <el-form inline>
@@ -135,7 +135,7 @@
 
     <!-- 修正对话框 -->
     <el-dialog v-model="editVisible" title="修正解析数据" width="600px" destroy-on-close @closed="resetEditForm">
-      <el-form ref="editFormRef" :model="editForm" label-width="90px">
+      <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="90px">
         <el-form-item label="姓名"><el-input v-model="editForm.name" /></el-form-item>
         <el-form-item label="手机号"><el-input v-model="editForm.phone" /></el-form-item>
         <el-form-item label="邮箱"><el-input v-model="editForm.email" /></el-form-item>
@@ -183,11 +183,15 @@ async function loadData() {
 function resetQuery() { queryForm.keyword = ''; queryForm.parseStatus = null; queryForm.jobId = null; queryForm.tag = null; queryForm.pageNum = 1; loadData() }
 
 async function handleUpload(file) {
+  const allowed = ['.pdf', '.doc', '.docx'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) { ElMessage.error('仅支持PDF或Word格式'); return false }
+  if (file.size > 10 * 1024 * 1024) { ElMessage.error('文件不能超过10MB'); return false }
   try {
     await uploadResume(file)
     ElMessage.success('上传成功')
     loadData()
-  } catch (e) { ElMessage.error('上传失败') }
+  } catch (e) { ElMessage.error('上传失败，请稍后重试') }
   return false
 }
 
@@ -263,6 +267,11 @@ const editForm = reactive({
   school: '', major: '', graduationYear: '',
   experience: '', expectedSalary: '', currentPosition: '', skills: ''
 })
+
+const editFormRules = {
+  name: [{ required: true, message: '姓名和电话为必填项', trigger: 'blur' }],
+  phone: [{ required: true, message: '姓名和电话为必填项', trigger: 'blur' }]
+}
 function handleEdit(row) {
   editId.value = row.id
   const raw = row.parsedJson ? JSON.parse(row.parsedJson) : {}
@@ -297,9 +306,11 @@ function resetEditForm() {
   editId.value = null
 }
 async function handleSaveEdit() {
+  const valid = await editFormRef.value.validate().catch(() => false)
+  if (!valid) return
   try {
     await updateParsedData(editId.value, { ...editForm })
-    ElMessage.success('保存成功')
+    ElMessage.success('修正已保存')
     editVisible.value = false
     loadData()
   } catch {}
